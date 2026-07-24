@@ -11,6 +11,13 @@ from app.models.exemption_code import ExemptionCode
 from app.models.manifest import Manifest
 from app.models.membership import Membership
 from app.models.redaction_candidate import RedactionCandidate
+from app.pipeline.email_intake import (
+    is_eml_mime,
+    is_msg_container_mime,
+    parse_eml,
+    parse_msg,
+    render_email_body_to_pdf,
+)
 from app.pipeline.intake import (
     IntakeError,
     content_sha256,
@@ -30,7 +37,9 @@ from app.schemas.document import (
     ManifestOut,
     PageOut,
 )
+from app.schemas.request import RequestCreate, RequestOut
 from app.services.audit_service import write_audit_event
+from app.services.request_service import create_request
 from app.storage import get_store
 
 router = APIRouter(tags=["documents"])
@@ -116,12 +125,49 @@ async def upload_document(
     into child documents (specs/05-redaction-pipeline.md Stage 1: "flatten one level;
     nested zips rejected") — bad entries are collected in `rejected` rather than failing
     the whole batch; a plain PDF still raises IntakeError (422) on validation failure,
-    same as before ZIP support existed."""
+    same as before ZIP support existed. An .eml/.msg becomes a new Request with the
+    rendered body plus every attachment as child documents (Stage 1: "EML/MSG: parse
+    headers/body/attachments into a Request with child documents")."""
     data = await file.read()
+    outer_mime = sniff_mime(data)
 
-    if is_zip_mime(sniff_mime(data)):
+    is_msg = is_msg_container_mime(outer_mime) and (file.filename or "").lower().endswith(".msg")
+    if is_eml_mime(outer_mime) or is_msg:
+        parsed = parse_msg(data) if is_msg else parse_eml(data)
+        request = await create_request(
+            db, membership.org_id, membership.user_id,
+            RequestCreate(title=parsed.subject, reference_no=parsed.message_id),
+        )
+
+        body_pdf = render_email_body_to_pdf(parsed)
+        documents = [
+            await _create_and_process_document(
+                db, membership, filename="email-body.pdf", mime_type=validate_and_scan(body_pdf),
+                data=body_pdf, request_id=request.id, source="email",
+            )
+        ]
+        rejected_pairs: list[tuple[str, str]] = []
+        for filename, att_bytes in parsed.attachments:
+            try:
+                mime_type = validate_and_scan(att_bytes)
+            except IntakeError as exc:
+                rejected_pairs.append((filename, exc.detail or "validation failed"))
+                continue
+            documents.append(
+                await _create_and_process_document(
+                    db, membership, filename=filename, mime_type=mime_type, data=att_bytes,
+                    request_id=request.id, source="email",
+                )
+            )
+        return BatchUploadResult(
+            documents=[DocumentOut.model_validate(d) for d in documents],
+            rejected=[BatchRejection(filename=f, reason=r) for f, r in rejected_pairs],
+            request=RequestOut.model_validate(request),
+        )
+
+    if is_zip_mime(outer_mime):
         entries, rejected_pairs = expand_zip(data)  # raises IntakeError on archive-level failure
-        documents: list[Document] = []
+        batch_documents: list[Document] = []
         for filename, member_bytes in entries:
             try:
                 mime_type = validate_and_scan(member_bytes)
@@ -132,9 +178,9 @@ async def upload_document(
                 db, membership, filename=filename, mime_type=mime_type, data=member_bytes,
                 request_id=request_id, source="batch",
             )
-            documents.append(document)
+            batch_documents.append(document)
         return BatchUploadResult(
-            documents=[DocumentOut.model_validate(d) for d in documents],
+            documents=[DocumentOut.model_validate(d) for d in batch_documents],
             rejected=[BatchRejection(filename=f, reason=r) for f, r in rejected_pairs],
         )
 

@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from app.schemas.request import RequestOut
+
 
 class DocumentOut(BaseModel):
     id: str
@@ -39,6 +41,9 @@ class BatchUploadResult(BaseModel):
 
     documents: list[DocumentOut]
     rejected: list[BatchRejection]
+    # Only set when the upload was an .eml/.msg — email intake creates a new Request to
+    # group the body-rendered PDF + attachment child documents under.
+    request: RequestOut | None = None
 
 
 class BBox(BaseModel):

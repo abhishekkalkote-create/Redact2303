@@ -63,6 +63,16 @@
             },
             "title": "Rejected",
             "type": "array"
+          },
+          "request": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RequestOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -1993,7 +2003,7 @@
         ]
       },
       "post": {
-        "description": "specs/04-api-spec.md upload finalize: \"creates document(s)\". A ZIP is expanded\ninto child documents (specs/05-redaction-pipeline.md Stage 1: \"flatten one level;\nnested zips rejected\") \u2014 bad entries are collected in `rejected` rather than failing\nthe whole batch; a plain PDF still raises IntakeError (422) on validation failure,\nsame as before ZIP support existed.",
+        "description": "specs/04-api-spec.md upload finalize: \"creates document(s)\". A ZIP is expanded\ninto child documents (specs/05-redaction-pipeline.md Stage 1: \"flatten one level;\nnested zips rejected\") \u2014 bad entries are collected in `rejected` rather than failing\nthe whole batch; a plain PDF still raises IntakeError (422) on validation failure,\nsame as before ZIP support existed. An .eml/.msg becomes a new Request with the\nrendered body plus every attachment as child documents (Stage 1: \"EML/MSG: parse\nheaders/body/attachments into a Request with child documents\").",
         "operationId": "upload_document_v1_documents_post",
         "parameters": [
           {

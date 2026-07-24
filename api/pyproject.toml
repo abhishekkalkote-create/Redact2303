@@ -22,6 +22,7 @@ dependencies = [
     "presidio-analyzer>=2.2",
     "python-magic>=0.4.27",
     "clamd>=1.0.2",
+    "extract-msg>=0.54",
 ]
 
 [project.optional-dependencies]

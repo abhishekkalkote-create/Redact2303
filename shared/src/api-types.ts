@@ -157,7 +157,9 @@ export interface paths {
          *     into child documents (specs/05-redaction-pipeline.md Stage 1: "flatten one level;
          *     nested zips rejected") — bad entries are collected in `rejected` rather than failing
          *     the whole batch; a plain PDF still raises IntakeError (422) on validation failure,
-         *     same as before ZIP support existed.
+         *     same as before ZIP support existed. An .eml/.msg becomes a new Request with the
+         *     rendered body plus every attachment as child documents (Stage 1: "EML/MSG: parse
+         *     headers/body/attachments into a Request with child documents").
          */
         post: operations["upload_document_v1_documents_post"];
         delete?: never;
@@ -581,6 +583,7 @@ export interface components {
             documents: components["schemas"]["DocumentOut"][];
             /** Rejected */
             rejected: components["schemas"]["BatchRejection"][];
+            request?: components["schemas"]["RequestOut"] | null;
         };
         /** Body_upload_document_v1_documents_post */
         Body_upload_document_v1_documents_post: {
