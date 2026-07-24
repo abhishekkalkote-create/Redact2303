@@ -13,6 +13,7 @@ from app.models.request import RecordsRequest
 from app.models.review_action import ReviewAction
 from app.models.usage_record import UsageRecord
 from app.models.user import User
+from app.models.webhook import WebhookDelivery, WebhookSubscription
 
 __all__ = [
     "AuditEvent",
@@ -32,4 +33,6 @@ __all__ = [
     "ReviewAction",
     "UsageRecord",
     "User",
+    "WebhookDelivery",
+    "WebhookSubscription",
 ]

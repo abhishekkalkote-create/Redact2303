@@ -24,6 +24,7 @@ from app.pipeline.detect_llm import detect_page_contextual
 from app.pipeline.extract import extract_pdf
 from app.pipeline.merge import MergeInput, group_recurrence, merge_overlapping
 from app.services.audit_service import write_audit_event
+from app.services.webhook_service import trigger_event
 from app.storage import get_store
 
 
@@ -164,6 +165,10 @@ async def process_document(session: AsyncSession, org_id: str, doc_id: str, acto
         session, org_id=org_id, actor_type="system", actor_id=actor_id,
         action="document.ready_for_review", object_type="document", object_id=doc_id,
         metadata={"pages": len(pages), "candidates": total_candidates, "hallucinated_findings": total_hallucinated},
+    )
+    await trigger_event(
+        session, org_id, "document.ready_for_review",
+        {"doc_id": doc_id, "pages": len(pages), "candidates": total_candidates},
     )
     await session.flush()
     await session.refresh(manifest)

@@ -28,6 +28,7 @@ from app.pipeline.export import (
 )
 from app.pipeline.intake import content_sha256
 from app.services.audit_service import write_audit_event
+from app.services.webhook_service import trigger_event
 from app.storage import get_store
 
 DEFAULT_EXPORT_TYPES = ("clean_pdf", "exemption_log_csv", "certificate_pdf")
@@ -149,6 +150,10 @@ async def create_export(
         session, org_id=org_id, actor_type="user", actor_id=user_id,
         action="export.created", object_type="document", object_id=doc_id,
         metadata={"redaction_count": len(rows), "integrity_passed": True, "types": list(types)},
+    )
+    await trigger_event(
+        session, org_id, "document.exported",
+        {"doc_id": doc_id, "redaction_count": len(rows), "types": list(types)},
     )
     await session.flush()
     for artifact in artifacts:

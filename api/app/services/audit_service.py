@@ -41,6 +41,8 @@ ACTIONS = frozenset(
         "request.created",
         "request.updated",
         "document.assigned",
+        "webhook.subscription_created",
+        "webhook.subscription_deleted",
         "webhook.delivered",
         "webhook.delivery_failed",
     }
