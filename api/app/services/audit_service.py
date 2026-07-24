@@ -6,6 +6,7 @@ so the audit row and the action it records commit or roll back together.
 
 import hashlib
 import json
+from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -100,6 +101,37 @@ async def write_audit_event(
     session.add(event)
     await session.flush()
     return event
+
+
+async def list_audit_events(
+    session: AsyncSession,
+    *,
+    actor_id: str | None = None,
+    action: str | None = None,
+    object_type: str | None = None,
+    object_id: str | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+) -> list[AuditEvent]:
+    """specs/04-api-spec.md GET /audit-events — the "Screen 7: Audit" filterable event
+    stream, and (with object_type="document"&object_id=<id>) the per-document timeline
+    view. Already org-scoped by RLS via the caller's org_session — no org_id filter needed
+    here."""
+    query = select(AuditEvent).order_by(AuditEvent.id)
+    if actor_id:
+        query = query.where(AuditEvent.actor_id == actor_id)
+    if action:
+        query = query.where(AuditEvent.action == action)
+    if object_type:
+        query = query.where(AuditEvent.object_type == object_type)
+    if object_id:
+        query = query.where(AuditEvent.object_id == object_id)
+    if date_from:
+        query = query.where(AuditEvent.created_at >= date_from)
+    if date_to:
+        query = query.where(AuditEvent.created_at <= date_to)
+    result = await session.execute(query)
+    return list(result.scalars().all())
 
 
 async def verify_chain(session: AsyncSession, org_id: str) -> bool:

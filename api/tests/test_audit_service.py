@@ -3,7 +3,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.audit_service import verify_chain, write_audit_event
+from app.services.audit_service import list_audit_events, verify_chain, write_audit_event
 from tests.conftest import set_org
 
 
@@ -62,6 +62,41 @@ async def test_audit_rejects_unknown_action(db_session: AsyncSession) -> None:
                 db_session, org_id="org_audit_test2", actor_type="user", actor_id="usr_audit_test2",
                 action="not.a.real.action", object_type="organization", object_id="org_audit_test2",
             )
+
+
+@pytest.mark.asyncio
+async def test_list_audit_events_filters_by_object_and_action(db_session: AsyncSession) -> None:
+    """specs/04-api-spec.md GET /audit-events — object_type/object_id is also how the
+    per-document timeline view (specs/07-ui-spec.md screen 7) is built."""
+    org_id, user_id = "org_audit_query", "usr_audit_query"
+    async with db_session.begin():
+        await _seed_org_and_user(db_session, org_id, user_id)
+
+    async with db_session.begin():
+        await set_org(db_session, org_id)
+        await write_audit_event(
+            db_session, org_id=org_id, actor_type="user", actor_id=user_id,
+            action="document.uploaded", object_type="document", object_id="doc_a",
+        )
+        await write_audit_event(
+            db_session, org_id=org_id, actor_type="user", actor_id=user_id,
+            action="review.completed", object_type="document", object_id="doc_a",
+        )
+        await write_audit_event(
+            db_session, org_id=org_id, actor_type="user", actor_id=user_id,
+            action="document.uploaded", object_type="document", object_id="doc_b",
+        )
+
+    async with db_session.begin():
+        await set_org(db_session, org_id)
+        for_doc_a = await list_audit_events(db_session, object_type="document", object_id="doc_a")
+        assert [e.action for e in for_doc_a] == ["document.uploaded", "review.completed"]
+
+        uploads_only = await list_audit_events(db_session, action="document.uploaded")
+        assert {e.object_id for e in uploads_only} == {"doc_a", "doc_b"}
+
+        nothing = await list_audit_events(db_session, object_type="document", object_id="doc_nonexistent")
+        assert nothing == []
 
 
 @pytest.mark.asyncio

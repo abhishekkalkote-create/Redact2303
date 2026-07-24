@@ -10,6 +10,7 @@ from app.core.errors import (
     validation_error_handler,
 )
 from app.routers import (
+    audit,
     auth,
     documents,
     exemption_codes,
@@ -56,3 +57,4 @@ app.include_router(review.router, prefix=settings.api_v1_prefix)
 app.include_router(exports.router, prefix=settings.api_v1_prefix)
 app.include_router(exemption_codes.router, prefix=settings.api_v1_prefix)
 app.include_router(requests.router, prefix=settings.api_v1_prefix)
+app.include_router(audit.router, prefix=settings.api_v1_prefix)

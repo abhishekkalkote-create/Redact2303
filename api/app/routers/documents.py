@@ -6,7 +6,6 @@ from app.auth.deps import get_membership, get_org_db
 from app.core.errors import NotFoundError
 from app.core.ids import new_id
 from app.crypto.envelope import get_cipher
-from app.models.audit_event import AuditEvent
 from app.models.document import Document, DocumentPage
 from app.models.exemption_code import ExemptionCode
 from app.models.manifest import Manifest
@@ -15,7 +14,6 @@ from app.models.redaction_candidate import RedactionCandidate
 from app.pipeline.intake import content_sha256, validate_and_scan
 from app.pipeline.run import process_document
 from app.schemas.document import (
-    AuditEventOut,
     BBox,
     CandidateOut,
     DocumentAssignPatch,
@@ -185,13 +183,3 @@ async def get_page_preview(doc_id: str, page_no: int, db: AsyncSession = Depends
 
     png_bytes = get_store().get(page.org_id, page.s3_key_preview)
     return Response(content=png_bytes, media_type="image/png")
-
-
-@router.get("/documents/{doc_id}/events", response_model=list[AuditEventOut])
-async def get_document_timeline(doc_id: str, db: AsyncSession = Depends(get_org_db)) -> list[AuditEvent]:
-    """specs/01-product-spec.md US-20 / specs/07-ui-spec.md screen 7: document timeline
-    audit view — every lifecycle event for this one document, oldest first."""
-    result = await db.execute(
-        select(AuditEvent).where(AuditEvent.object_type == "document", AuditEvent.object_id == doc_id).order_by(AuditEvent.id)
-    )
-    return list(result.scalars().all())
