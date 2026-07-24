@@ -7,6 +7,8 @@ from app.models.membership import Membership
 from app.models.redaction_candidate import RedactionCandidate
 from app.schemas.document import (
     BBox,
+    BulkUpdateRequest,
+    BulkUpdateResponse,
     CandidateCreate,
     CandidateOut,
     CandidatePatch,
@@ -14,7 +16,12 @@ from app.schemas.document import (
     SearchRedactRequest,
     SearchRedactResponse,
 )
-from app.services.review_service import complete_review, create_manual_candidate, patch_candidate
+from app.services.review_service import (
+    bulk_update_candidates,
+    complete_review,
+    create_manual_candidate,
+    patch_candidate,
+)
 from app.services.search_service import search_and_redact
 
 router = APIRouter(tags=["review"])
@@ -28,7 +35,7 @@ def _to_out(candidate: RedactionCandidate) -> CandidateOut:
         origin=candidate.origin, source_rule_key=candidate.source_rule_key,
         exemption_code_id=candidate.exemption_code_id, exemption_code=None,
         ai_justification=candidate.ai_justification, confidence=candidate.confidence,
-        state=candidate.state,
+        state=candidate.state, recurrence_group_id=candidate.recurrence_group_id,
     )
 
 
@@ -87,3 +94,19 @@ async def search_redact_route(
         page_no=payload.page_no, exemption_code_id=payload.exemption_code_id,
     )
     return SearchRedactResponse(created=[_to_out(c) for c in created])
+
+
+@router.post("/documents/{doc_id}/candidates:bulk", response_model=BulkUpdateResponse)
+async def bulk_update_route(
+    doc_id: str,
+    payload: BulkUpdateRequest,
+    membership: Membership = Depends(get_membership),
+    db: AsyncSession = Depends(get_org_db),
+) -> BulkUpdateResponse:
+    updated = await bulk_update_candidates(
+        db, membership.org_id, doc_id, membership.user_id,
+        action=payload.action, candidate_ids=payload.candidate_ids,
+        recurrence_group_id=payload.recurrence_group_id, confidence=payload.confidence,
+        exemption_code_id=payload.exemption_code_id,
+    )
+    return BulkUpdateResponse(updated=[_to_out(c) for c in updated])

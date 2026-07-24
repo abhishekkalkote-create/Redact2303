@@ -37,6 +37,7 @@ class CandidateOut(BaseModel):
     ai_justification: str | None = None
     confidence: str
     state: str
+    recurrence_group_id: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -74,3 +75,36 @@ class SearchRedactRequest(BaseModel):
 
 class SearchRedactResponse(BaseModel):
     created: list[CandidateOut]
+
+
+class BulkUpdateRequest(BaseModel):
+    action: str  # "approve" | "reject"
+    candidate_ids: list[str] | None = None
+    recurrence_group_id: str | None = None
+    confidence: str | None = None
+    exemption_code_id: str | None = None
+
+
+class BulkUpdateResponse(BaseModel):
+    updated: list[CandidateOut]
+
+
+class PageOut(BaseModel):
+    page_no: int
+    width: float
+    height: float
+    rotation: int
+    has_text_layer: bool
+
+    model_config = {"from_attributes": True}
+
+
+class ExemptionCodeOut(BaseModel):
+    id: str
+    code: str
+    label: str
+    statute_citation: str | None = None
+    description: str | None = None
+    status: str
+
+    model_config = {"from_attributes": True}

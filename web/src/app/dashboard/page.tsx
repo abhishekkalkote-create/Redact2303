@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -95,9 +96,14 @@ export default function DashboardPage() {
             <Badge variant="secondary">{org.plan}</Badge>
           </p>
         </div>
-        <Button variant="outline" onClick={handleLogout}>
-          Log out
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link href="/documents" className={buttonVariants({ variant: "outline" })}>
+            Documents
+          </Link>
+          <Button variant="outline" onClick={handleLogout}>
+            Log out
+          </Button>
+        </div>
       </div>
 
       <Separator />

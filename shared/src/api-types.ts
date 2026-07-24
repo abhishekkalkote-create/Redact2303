@@ -77,6 +77,263 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/candidates/{candidate_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Candidate Route */
+        patch: operations["patch_candidate_route_v1_candidates__candidate_id__patch"];
+        trace?: never;
+    };
+    "/v1/certificates/{certificate_id}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Verify Certificate Route
+         * @description Deliberately public — no auth dependency. See migration 0004 for the RLS policy
+         *     that makes this safe (declare-the-exact-id lookup, not a listing).
+         */
+        get: operations["verify_certificate_route_v1_certificates__certificate_id__verify_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Documents */
+        get: operations["list_documents_v1_documents_get"];
+        put?: never;
+        /** Upload Document */
+        post: operations["upload_document_v1_documents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{doc_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Document */
+        get: operations["get_document_v1_documents__doc_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{doc_id}/candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Candidate */
+        post: operations["create_candidate_v1_documents__doc_id__candidates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{doc_id}/candidates:bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bulk Update Route */
+        post: operations["bulk_update_route_v1_documents__doc_id__candidates_bulk_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{doc_id}/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Export Document */
+        post: operations["export_document_v1_documents__doc_id__exports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{doc_id}/manifest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Manifest */
+        get: operations["get_manifest_v1_documents__doc_id__manifest_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{doc_id}/pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Pages */
+        get: operations["list_pages_v1_documents__doc_id__pages_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{doc_id}/pages/{page_no}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Page Preview
+         * @description specs/04-api-spec.md: "short-lived signed URL for rendered page image" in the real
+         *     S3-backed design; served directly here since there's no S3/CDN to sign a URL against
+         *     yet (app/storage/local.py). Still auth-gated the same way — org-scoped, not public.
+         */
+        get: operations["get_page_preview_v1_documents__doc_id__pages__page_no__preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{doc_id}/review:complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete Review Route */
+        post: operations["complete_review_route_v1_documents__doc_id__review_complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{doc_id}/search-redact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Search Redact Route */
+        post: operations["search_redact_route_v1_documents__doc_id__search_redact_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/exemption-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Exemption Codes
+         * @description specs/04-api-spec.md GET /exemption-codes — the org's own taxonomy (already cloned
+         *     from the federal + state library at org creation, see exemption_service.py).
+         */
+        get: operations["list_exemption_codes_v1_exemption_codes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/exports/{export_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download Export
+         * @description specs/04-api-spec.md: "signed URL" in the real S3-backed design; served directly
+         *     here for the same reason as page previews (app/storage/local.py) — still auth-gated
+         *     and org-scoped via get_org_db, not public like certificate verification.
+         */
+        get: operations["download_export_v1_exports__export_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/invites/{token}/accept": {
         parameters: {
             query?: never;
@@ -184,6 +441,97 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** BBox */
+        BBox: {
+            /** H */
+            h: number;
+            /** W */
+            w: number;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+        };
+        /** Body_upload_document_v1_documents_post */
+        Body_upload_document_v1_documents_post: {
+            /** File */
+            file: string;
+        };
+        /** BulkUpdateRequest */
+        BulkUpdateRequest: {
+            /** Action */
+            action: string;
+            /** Candidate Ids */
+            candidate_ids?: string[] | null;
+            /** Confidence */
+            confidence?: string | null;
+            /** Exemption Code Id */
+            exemption_code_id?: string | null;
+            /** Recurrence Group Id */
+            recurrence_group_id?: string | null;
+        };
+        /** BulkUpdateResponse */
+        BulkUpdateResponse: {
+            /** Updated */
+            updated: components["schemas"]["CandidateOut"][];
+        };
+        /** CandidateCreate */
+        CandidateCreate: {
+            bbox: components["schemas"]["BBox"];
+            /** Exemption Code Id */
+            exemption_code_id: string;
+            /** Note */
+            note?: string | null;
+            /** Page No */
+            page_no: number;
+        };
+        /** CandidateOut */
+        CandidateOut: {
+            /** Ai Justification */
+            ai_justification?: string | null;
+            bbox: components["schemas"]["BBox"];
+            /** Confidence */
+            confidence: string;
+            /** Display Text */
+            display_text: string;
+            /** Exemption Code */
+            exemption_code?: string | null;
+            /** Exemption Code Id */
+            exemption_code_id?: string | null;
+            /** Id */
+            id: string;
+            /** Origin */
+            origin: string;
+            /** Page No */
+            page_no: number;
+            /** Recurrence Group Id */
+            recurrence_group_id?: string | null;
+            /** Source Rule Key */
+            source_rule_key?: string | null;
+            /** State */
+            state: string;
+        };
+        /** CandidatePatch */
+        CandidatePatch: {
+            /** Ai Justification */
+            ai_justification?: string | null;
+            bbox?: components["schemas"]["BBox"] | null;
+            /** Exemption Code Id */
+            exemption_code_id?: string | null;
+            /** Note */
+            note?: string | null;
+            /** State */
+            state?: string | null;
+        };
+        /** CertificateVerifyResponse */
+        CertificateVerifyResponse: {
+            /** Facts */
+            facts: {
+                [key: string]: unknown;
+            };
+            /** Valid */
+            valid: boolean;
+        };
         /**
          * DevLoginRequest
          * @description Local-only: mints a dev JWT for an existing (or newly created) user, standing in for
@@ -200,6 +548,83 @@ export interface components {
              * @default Dev User
              */
             name: string;
+        };
+        /** DocumentOut */
+        DocumentOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Error */
+            error?: {
+                [key: string]: unknown;
+            } | null;
+            /** Filename */
+            filename: string;
+            /** Id */
+            id: string;
+            /** Mime Type */
+            mime_type: string;
+            /** Ocr Used */
+            ocr_used: boolean;
+            /** Page Count */
+            page_count?: number | null;
+            /** Source */
+            source: string;
+            /** Status */
+            status: string;
+            /** Uploaded By */
+            uploaded_by: string;
+        };
+        /** ExemptionCodeOut */
+        ExemptionCodeOut: {
+            /** Code */
+            code: string;
+            /** Description */
+            description?: string | null;
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Status */
+            status: string;
+            /** Statute Citation */
+            statute_citation?: string | null;
+        };
+        /** ExportOut */
+        ExportOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Doc Id */
+            doc_id: string | null;
+            /** Id */
+            id: string;
+            /** Integrity Check */
+            integrity_check: {
+                [key: string]: unknown;
+            };
+            /** Manifest Version */
+            manifest_version: number;
+            /** Sha256 */
+            sha256: string;
+            /** Type */
+            type: string;
+        };
+        /** ExportRequest */
+        ExportRequest: {
+            /**
+             * Types
+             * @default [
+             *       "clean_pdf",
+             *       "exemption_log_csv",
+             *       "certificate_pdf"
+             *     ]
+             */
+            types: string[];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -235,6 +660,21 @@ export interface components {
             role: string;
             /** Token */
             token?: string | null;
+        };
+        /** ManifestOut */
+        ManifestOut: {
+            /** Candidates */
+            candidates: components["schemas"]["CandidateOut"][];
+            /** Completeness */
+            completeness: {
+                [key: string]: unknown;
+            };
+            /** Doc Id */
+            doc_id: string;
+            /** Schema Version */
+            schema_version: number;
+            /** Version */
+            version: number;
         };
         /** MemberOut */
         MemberOut: {
@@ -322,6 +762,43 @@ export interface components {
             retention_days_exports?: number | null;
             /** Retention Days Uploads */
             retention_days_uploads?: number | null;
+        };
+        /** PageOut */
+        PageOut: {
+            /** Has Text Layer */
+            has_text_layer: boolean;
+            /** Height */
+            height: number;
+            /** Page No */
+            page_no: number;
+            /** Rotation */
+            rotation: number;
+            /** Width */
+            width: number;
+        };
+        /** SearchRedactRequest */
+        SearchRedactRequest: {
+            /** Exemption Code Id */
+            exemption_code_id: string;
+            /**
+             * Is Pattern
+             * @default false
+             */
+            is_pattern: boolean;
+            /** Page No */
+            page_no?: number | null;
+            /** Query */
+            query: string;
+            /**
+             * Scope
+             * @default document
+             */
+            scope: string;
+        };
+        /** SearchRedactResponse */
+        SearchRedactResponse: {
+            /** Created */
+            created: components["schemas"]["CandidateOut"][];
         };
         /** SignupRequest */
         SignupRequest: {
@@ -473,6 +950,533 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SignupResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_candidate_route_v1_candidates__candidate_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                candidate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidatePatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    verify_certificate_route_v1_certificates__certificate_id__verify_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                certificate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CertificateVerifyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_documents_v1_documents_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_document_v1_documents_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_document_v1_documents_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_document_v1_documents__doc_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                doc_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_candidate_v1_documents__doc_id__candidates_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                doc_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bulk_update_route_v1_documents__doc_id__candidates_bulk_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                doc_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkUpdateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_document_v1_documents__doc_id__exports_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                doc_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_manifest_v1_documents__doc_id__manifest_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                doc_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManifestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_pages_v1_documents__doc_id__pages_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                doc_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_page_preview_v1_documents__doc_id__pages__page_no__preview_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                doc_id: string;
+                page_no: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_review_route_v1_documents__doc_id__review_complete_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                doc_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_redact_route_v1_documents__doc_id__search_redact_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                doc_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SearchRedactRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchRedactResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_exemption_codes_v1_exemption_codes_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExemptionCodeOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_export_v1_exports__export_id__download_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

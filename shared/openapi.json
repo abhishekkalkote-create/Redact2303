@@ -1,6 +1,333 @@
 {
   "components": {
     "schemas": {
+      "BBox": {
+        "properties": {
+          "h": {
+            "title": "H",
+            "type": "number"
+          },
+          "w": {
+            "title": "W",
+            "type": "number"
+          },
+          "x": {
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "w",
+          "h"
+        ],
+        "title": "BBox",
+        "type": "object"
+      },
+      "Body_upload_document_v1_documents_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_document_v1_documents_post",
+        "type": "object"
+      },
+      "BulkUpdateRequest": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "candidate_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidate Ids"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "exemption_code_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exemption Code Id"
+          },
+          "recurrence_group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recurrence Group Id"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "BulkUpdateRequest",
+        "type": "object"
+      },
+      "BulkUpdateResponse": {
+        "properties": {
+          "updated": {
+            "items": {
+              "$ref": "#/components/schemas/CandidateOut"
+            },
+            "title": "Updated",
+            "type": "array"
+          }
+        },
+        "required": [
+          "updated"
+        ],
+        "title": "BulkUpdateResponse",
+        "type": "object"
+      },
+      "CandidateCreate": {
+        "properties": {
+          "bbox": {
+            "$ref": "#/components/schemas/BBox"
+          },
+          "exemption_code_id": {
+            "title": "Exemption Code Id",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "page_no": {
+            "title": "Page No",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "page_no",
+          "bbox",
+          "exemption_code_id"
+        ],
+        "title": "CandidateCreate",
+        "type": "object"
+      },
+      "CandidateOut": {
+        "properties": {
+          "ai_justification": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Justification"
+          },
+          "bbox": {
+            "$ref": "#/components/schemas/BBox"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "string"
+          },
+          "display_text": {
+            "title": "Display Text",
+            "type": "string"
+          },
+          "exemption_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exemption Code"
+          },
+          "exemption_code_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exemption Code Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "origin": {
+            "title": "Origin",
+            "type": "string"
+          },
+          "page_no": {
+            "title": "Page No",
+            "type": "integer"
+          },
+          "recurrence_group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recurrence Group Id"
+          },
+          "source_rule_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Rule Key"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "page_no",
+          "bbox",
+          "display_text",
+          "origin",
+          "confidence",
+          "state"
+        ],
+        "title": "CandidateOut",
+        "type": "object"
+      },
+      "CandidatePatch": {
+        "properties": {
+          "ai_justification": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Justification"
+          },
+          "bbox": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BBox"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "exemption_code_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exemption Code Id"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          }
+        },
+        "title": "CandidatePatch",
+        "type": "object"
+      },
+      "CertificateVerifyResponse": {
+        "properties": {
+          "facts": {
+            "additionalProperties": true,
+            "title": "Facts",
+            "type": "object"
+          },
+          "valid": {
+            "title": "Valid",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "valid",
+          "facts"
+        ],
+        "title": "CertificateVerifyResponse",
+        "type": "object"
+      },
       "DevLoginRequest": {
         "description": "Local-only: mints a dev JWT for an existing (or newly created) user, standing in for\nthe Cognito hosted login flow until a user pool exists.",
         "properties": {
@@ -19,6 +346,198 @@
           "email"
         ],
         "title": "DevLoginRequest",
+        "type": "object"
+      },
+      "DocumentOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "mime_type": {
+            "title": "Mime Type",
+            "type": "string"
+          },
+          "ocr_used": {
+            "title": "Ocr Used",
+            "type": "boolean"
+          },
+          "page_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Count"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "uploaded_by": {
+            "title": "Uploaded By",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "filename",
+          "mime_type",
+          "source",
+          "status",
+          "ocr_used",
+          "uploaded_by",
+          "created_at"
+        ],
+        "title": "DocumentOut",
+        "type": "object"
+      },
+      "ExemptionCodeOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "statute_citation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Statute Citation"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "label",
+          "status"
+        ],
+        "title": "ExemptionCodeOut",
+        "type": "object"
+      },
+      "ExportOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "doc_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doc Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "integrity_check": {
+            "additionalProperties": true,
+            "title": "Integrity Check",
+            "type": "object"
+          },
+          "manifest_version": {
+            "title": "Manifest Version",
+            "type": "integer"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "doc_id",
+          "type",
+          "sha256",
+          "manifest_version",
+          "integrity_check",
+          "created_at"
+        ],
+        "title": "ExportOut",
+        "type": "object"
+      },
+      "ExportRequest": {
+        "properties": {
+          "types": {
+            "default": [
+              "clean_pdf",
+              "exemption_log_csv",
+              "certificate_pdf"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "title": "Types",
+            "type": "array"
+          }
+        },
+        "title": "ExportRequest",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -108,6 +627,43 @@
           "expires_at"
         ],
         "title": "InviteOut",
+        "type": "object"
+      },
+      "ManifestOut": {
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/CandidateOut"
+            },
+            "title": "Candidates",
+            "type": "array"
+          },
+          "completeness": {
+            "additionalProperties": true,
+            "title": "Completeness",
+            "type": "object"
+          },
+          "doc_id": {
+            "title": "Doc Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "doc_id",
+          "version",
+          "schema_version",
+          "completeness",
+          "candidates"
+        ],
+        "title": "ManifestOut",
         "type": "object"
       },
       "MemberOut": {
@@ -362,6 +918,94 @@
         "title": "OrgSettingsUpdate",
         "type": "object"
       },
+      "PageOut": {
+        "properties": {
+          "has_text_layer": {
+            "title": "Has Text Layer",
+            "type": "boolean"
+          },
+          "height": {
+            "title": "Height",
+            "type": "number"
+          },
+          "page_no": {
+            "title": "Page No",
+            "type": "integer"
+          },
+          "rotation": {
+            "title": "Rotation",
+            "type": "integer"
+          },
+          "width": {
+            "title": "Width",
+            "type": "number"
+          }
+        },
+        "required": [
+          "page_no",
+          "width",
+          "height",
+          "rotation",
+          "has_text_layer"
+        ],
+        "title": "PageOut",
+        "type": "object"
+      },
+      "SearchRedactRequest": {
+        "properties": {
+          "exemption_code_id": {
+            "title": "Exemption Code Id",
+            "type": "string"
+          },
+          "is_pattern": {
+            "default": false,
+            "title": "Is Pattern",
+            "type": "boolean"
+          },
+          "page_no": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page No"
+          },
+          "query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "scope": {
+            "default": "document",
+            "title": "Scope",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query",
+          "exemption_code_id"
+        ],
+        "title": "SearchRedactRequest",
+        "type": "object"
+      },
+      "SearchRedactResponse": {
+        "properties": {
+          "created": {
+            "items": {
+              "$ref": "#/components/schemas/CandidateOut"
+            },
+            "title": "Created",
+            "type": "array"
+          }
+        },
+        "required": [
+          "created"
+        ],
+        "title": "SearchRedactResponse",
+        "type": "object"
+      },
       "SignupRequest": {
         "properties": {
           "email": {
@@ -604,6 +1248,1156 @@
         "summary": "Signup",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/v1/candidates/{candidate_id}": {
+      "patch": {
+        "operationId": "patch_candidate_route_v1_candidates__candidate_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "candidate_id",
+            "required": true,
+            "schema": {
+              "title": "Candidate Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CandidatePatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidateOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Candidate Route",
+        "tags": [
+          "review"
+        ]
+      }
+    },
+    "/v1/certificates/{certificate_id}/verify": {
+      "get": {
+        "description": "Deliberately public \u2014 no auth dependency. See migration 0004 for the RLS policy\nthat makes this safe (declare-the-exact-id lookup, not a listing).",
+        "operationId": "verify_certificate_route_v1_certificates__certificate_id__verify_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "certificate_id",
+            "required": true,
+            "schema": {
+              "title": "Certificate Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CertificateVerifyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Verify Certificate Route",
+        "tags": [
+          "exports"
+        ]
+      }
+    },
+    "/v1/documents": {
+      "get": {
+        "operationId": "list_documents_v1_documents_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentOut"
+                  },
+                  "title": "Response List Documents V1 Documents Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Documents",
+        "tags": [
+          "documents"
+        ]
+      },
+      "post": {
+        "operationId": "upload_document_v1_documents_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_document_v1_documents_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Document",
+        "tags": [
+          "documents"
+        ]
+      }
+    },
+    "/v1/documents/{doc_id}": {
+      "get": {
+        "operationId": "get_document_v1_documents__doc_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doc_id",
+            "required": true,
+            "schema": {
+              "title": "Doc Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Document",
+        "tags": [
+          "documents"
+        ]
+      }
+    },
+    "/v1/documents/{doc_id}/candidates": {
+      "post": {
+        "operationId": "create_candidate_v1_documents__doc_id__candidates_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doc_id",
+            "required": true,
+            "schema": {
+              "title": "Doc Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CandidateCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidateOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Candidate",
+        "tags": [
+          "review"
+        ]
+      }
+    },
+    "/v1/documents/{doc_id}/candidates:bulk": {
+      "post": {
+        "operationId": "bulk_update_route_v1_documents__doc_id__candidates_bulk_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doc_id",
+            "required": true,
+            "schema": {
+              "title": "Doc Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUpdateResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Bulk Update Route",
+        "tags": [
+          "review"
+        ]
+      }
+    },
+    "/v1/documents/{doc_id}/exports": {
+      "post": {
+        "operationId": "export_document_v1_documents__doc_id__exports_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doc_id",
+            "required": true,
+            "schema": {
+              "title": "Doc Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ExportOut"
+                  },
+                  "title": "Response Export Document V1 Documents  Doc Id  Exports Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Document",
+        "tags": [
+          "exports"
+        ]
+      }
+    },
+    "/v1/documents/{doc_id}/manifest": {
+      "get": {
+        "operationId": "get_manifest_v1_documents__doc_id__manifest_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doc_id",
+            "required": true,
+            "schema": {
+              "title": "Doc Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManifestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Manifest",
+        "tags": [
+          "documents"
+        ]
+      }
+    },
+    "/v1/documents/{doc_id}/pages": {
+      "get": {
+        "operationId": "list_pages_v1_documents__doc_id__pages_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doc_id",
+            "required": true,
+            "schema": {
+              "title": "Doc Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PageOut"
+                  },
+                  "title": "Response List Pages V1 Documents  Doc Id  Pages Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Pages",
+        "tags": [
+          "documents"
+        ]
+      }
+    },
+    "/v1/documents/{doc_id}/pages/{page_no}/preview": {
+      "get": {
+        "description": "specs/04-api-spec.md: \"short-lived signed URL for rendered page image\" in the real\nS3-backed design; served directly here since there's no S3/CDN to sign a URL against\nyet (app/storage/local.py). Still auth-gated the same way \u2014 org-scoped, not public.",
+        "operationId": "get_page_preview_v1_documents__doc_id__pages__page_no__preview_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doc_id",
+            "required": true,
+            "schema": {
+              "title": "Doc Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "page_no",
+            "required": true,
+            "schema": {
+              "title": "Page No",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Page Preview",
+        "tags": [
+          "documents"
+        ]
+      }
+    },
+    "/v1/documents/{doc_id}/review:complete": {
+      "post": {
+        "operationId": "complete_review_route_v1_documents__doc_id__review_complete_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doc_id",
+            "required": true,
+            "schema": {
+              "title": "Doc Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Complete Review Route",
+        "tags": [
+          "review"
+        ]
+      }
+    },
+    "/v1/documents/{doc_id}/search-redact": {
+      "post": {
+        "operationId": "search_redact_route_v1_documents__doc_id__search_redact_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doc_id",
+            "required": true,
+            "schema": {
+              "title": "Doc Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRedactRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchRedactResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search Redact Route",
+        "tags": [
+          "review"
+        ]
+      }
+    },
+    "/v1/exemption-codes": {
+      "get": {
+        "description": "specs/04-api-spec.md GET /exemption-codes \u2014 the org's own taxonomy (already cloned\nfrom the federal + state library at org creation, see exemption_service.py).",
+        "operationId": "list_exemption_codes_v1_exemption_codes_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ExemptionCodeOut"
+                  },
+                  "title": "Response List Exemption Codes V1 Exemption Codes Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Exemption Codes",
+        "tags": [
+          "exemption-codes"
+        ]
+      }
+    },
+    "/v1/exports/{export_id}/download": {
+      "get": {
+        "description": "specs/04-api-spec.md: \"signed URL\" in the real S3-backed design; served directly\nhere for the same reason as page previews (app/storage/local.py) \u2014 still auth-gated\nand org-scoped via get_org_db, not public like certificate verification.",
+        "operationId": "download_export_v1_exports__export_id__download_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "export_id",
+            "required": true,
+            "schema": {
+              "title": "Export Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Export",
+        "tags": [
+          "exports"
         ]
       }
     },

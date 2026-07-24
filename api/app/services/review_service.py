@@ -119,6 +119,72 @@ async def create_manual_candidate(
     return candidate
 
 
+async def bulk_update_candidates(
+    session: AsyncSession,
+    org_id: str,
+    doc_id: str,
+    user_id: str,
+    *,
+    action: str,
+    candidate_ids: list[str] | None = None,
+    recurrence_group_id: str | None = None,
+    confidence: str | None = None,
+    exemption_code_id: str | None = None,
+) -> list[RedactionCandidate]:
+    """specs/04-api-spec.md POST /documents/{id}/candidates:bulk. Covers both US-6
+    ("accept all high-confidence") via `confidence` and the review workspace's "apply to
+    all similar" (right-click on a recurrence group) via `recurrence_group_id` — exactly
+    one of `candidate_ids` / `recurrence_group_id` / `confidence` must be given."""
+    if action not in ("approve", "reject"):
+        raise ApiError(422, "Unprocessable Entity", "bulk action must be 'approve' or 'reject'")
+    if action == "approve" and not exemption_code_id:
+        raise ApiError(422, "Unprocessable Entity", "exemption_code_id is required to bulk-approve")
+
+    selectors = [candidate_ids, recurrence_group_id, confidence]
+    if sum(s is not None for s in selectors) != 1:
+        raise ApiError(422, "Unprocessable Entity", "exactly one of candidate_ids/recurrence_group_id/confidence is required")
+
+    query = select(RedactionCandidate).where(RedactionCandidate.doc_id == doc_id)
+    if candidate_ids is not None:
+        query = query.where(RedactionCandidate.id.in_(candidate_ids))
+    elif recurrence_group_id is not None:
+        query = query.where(RedactionCandidate.recurrence_group_id == recurrence_group_id)
+    else:
+        query = query.where(RedactionCandidate.confidence == confidence)
+
+    result = await session.execute(query)
+    candidates = result.scalars().all()
+
+    manifest = await get_manifest_by_doc(session, doc_id)
+    updated = []
+    for candidate in candidates:
+        before = {"state": candidate.state, "exemption_code_id": candidate.exemption_code_id}
+        if action == "approve":
+            candidate.exemption_code_id = exemption_code_id
+        candidate.state = "approved" if action == "approve" else "rejected"
+        session.add(
+            ReviewAction(
+                id=new_id("ract"), org_id=org_id, doc_id=doc_id, candidate_id=candidate.id,
+                user_id=user_id, action="bulk_approve" if action == "approve" else "reject",
+                payload={"before": before}, note=None,
+            )
+        )
+        updated.append(candidate)
+
+    if updated:
+        manifest.version += 1
+        await write_audit_event(
+            session, org_id=org_id, actor_type="user", actor_id=user_id,
+            action="candidate.approved" if action == "approve" else "candidate.rejected",
+            object_type="document", object_id=doc_id,
+            metadata={"bulk_count": len(updated), "selector": "recurrence_group" if recurrence_group_id else ("confidence" if confidence else "ids")},
+        )
+        await session.flush()
+        for c in updated:
+            await session.refresh(c)
+    return updated
+
+
 async def complete_review(session: AsyncSession, org_id: str, doc_id: str, user_id: str) -> Document:
     """specs/04-api-spec.md POST /documents/{id}/review:complete — validates the
     completeness checklist (specs/03-data-model.md: zero unresolved low-confidence

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile
+from fastapi import APIRouter, Depends, Response, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -6,18 +6,24 @@ from app.auth.deps import get_membership, get_org_db
 from app.core.errors import NotFoundError
 from app.core.ids import new_id
 from app.crypto.envelope import get_cipher
-from app.models.document import Document
+from app.models.document import Document, DocumentPage
 from app.models.exemption_code import ExemptionCode
 from app.models.manifest import Manifest
 from app.models.membership import Membership
 from app.models.redaction_candidate import RedactionCandidate
 from app.pipeline.intake import content_sha256, validate_and_scan
 from app.pipeline.run import process_document
-from app.schemas.document import BBox, CandidateOut, DocumentOut, ManifestOut
+from app.schemas.document import BBox, CandidateOut, DocumentOut, ManifestOut, PageOut
 from app.services.audit_service import write_audit_event
 from app.storage import get_store
 
 router = APIRouter(tags=["documents"])
+
+
+@router.get("/documents", response_model=list[DocumentOut])
+async def list_documents(db: AsyncSession = Depends(get_org_db)) -> list[Document]:
+    result = await db.execute(select(Document).order_by(Document.created_at.desc()))
+    return list(result.scalars().all())
 
 
 @router.post("/documents", response_model=DocumentOut, status_code=201)
@@ -97,6 +103,7 @@ async def get_manifest(doc_id: str, db: AsyncSession = Depends(get_org_db)) -> M
             origin=c.origin, source_rule_key=c.source_rule_key,
             exemption_code_id=c.exemption_code_id, exemption_code=code,
             ai_justification=c.ai_justification, confidence=c.confidence, state=c.state,
+            recurrence_group_id=c.recurrence_group_id,
         )
         for c, code in result.all()
     ]
@@ -104,3 +111,27 @@ async def get_manifest(doc_id: str, db: AsyncSession = Depends(get_org_db)) -> M
         doc_id=doc_id, version=manifest.version, schema_version=manifest.schema_version,
         completeness=manifest.completeness, candidates=candidates,
     )
+
+
+@router.get("/documents/{doc_id}/pages", response_model=list[PageOut])
+async def list_pages(doc_id: str, db: AsyncSession = Depends(get_org_db)) -> list[DocumentPage]:
+    result = await db.execute(
+        select(DocumentPage).where(DocumentPage.doc_id == doc_id).order_by(DocumentPage.page_no)
+    )
+    return list(result.scalars().all())
+
+
+@router.get("/documents/{doc_id}/pages/{page_no}/preview")
+async def get_page_preview(doc_id: str, page_no: int, db: AsyncSession = Depends(get_org_db)) -> Response:
+    """specs/04-api-spec.md: "short-lived signed URL for rendered page image" in the real
+    S3-backed design; served directly here since there's no S3/CDN to sign a URL against
+    yet (app/storage/local.py). Still auth-gated the same way — org-scoped, not public."""
+    result = await db.execute(
+        select(DocumentPage).where(DocumentPage.doc_id == doc_id, DocumentPage.page_no == page_no)
+    )
+    page = result.scalars().first()
+    if page is None or page.s3_key_preview is None:
+        raise NotFoundError("Page preview not found")
+
+    png_bytes = get_store().get(page.org_id, page.s3_key_preview)
+    return Response(content=png_bytes, media_type="image/png")
