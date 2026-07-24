@@ -1,5 +1,13 @@
 """specs/05-redaction-pipeline.md Stage 1: Intake. Phase 1 scope was single born-digital
-PDF only; Phase 3 adds ZIP batch expansion (EML/MSG and DOCX intake remain open gaps)."""
+PDF only; Phase 3 adds ZIP batch expansion and EML/MSG (app/pipeline/email_intake.py).
+
+DOCX/DOC/XLSX/PPTX are deliberately NOT converted server-side — no reliable converter is
+available in this environment (no LibreOffice), and a lesser pure-Python approximation
+would silently degrade formatting/tables/images. Word's own "Export to PDF" already
+produces a real, high-fidelity PDF; users are directed to do that and upload the result,
+which then goes through the exact same path as any other PDF. `OFFICE_MIME_HINTS` below
+turns a raw "unsupported type" 422 into that actionable instruction instead of a dead end.
+"""
 
 import hashlib
 import io
@@ -13,6 +21,33 @@ from app.pipeline.malware_scan import get_scanner
 
 ACCEPTED_MIME_TYPES = {"application/pdf"}
 ZIP_MIME_TYPES = {"application/zip", "application/x-zip-compressed"}
+
+OFFICE_MIME_HINTS = {
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": (
+        "DOCX files aren't accepted directly. In Word, use File > Save As "
+        "(or Export) > PDF, then upload the PDF."
+    ),
+    "application/msword": (
+        "DOC files aren't accepted directly. In Word, use File > Save As "
+        "(or Export) > PDF, then upload the PDF."
+    ),
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": (
+        "XLSX files aren't accepted directly. In Excel, use File > Save As "
+        "(or Export) > PDF, then upload the PDF."
+    ),
+    "application/vnd.ms-excel": (
+        "XLS files aren't accepted directly. In Excel, use File > Save As "
+        "(or Export) > PDF, then upload the PDF."
+    ),
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": (
+        "PPTX files aren't accepted directly. In PowerPoint, use File > Save As "
+        "(or Export) > PDF, then upload the PDF."
+    ),
+    "application/vnd.ms-powerpoint": (
+        "PPT files aren't accepted directly. In PowerPoint, use File > Save As "
+        "(or Export) > PDF, then upload the PDF."
+    ),
+}
 
 
 class IntakeError(ApiError):
@@ -96,7 +131,10 @@ def validate_and_scan(data: bytes, settings: Settings | None = None) -> str:
 
     mime_type = magic.from_buffer(data, mime=True)
     if mime_type not in ACCEPTED_MIME_TYPES:
-        raise IntakeError(f"Unsupported file type: {mime_type} (only PDF in Phase 1)")
+        hint = OFFICE_MIME_HINTS.get(mime_type)
+        if hint:
+            raise IntakeError(hint)
+        raise IntakeError(f"Unsupported file type: {mime_type}. Upload a PDF, a ZIP of PDFs, or an .eml/.msg.")
 
     scanner = get_scanner(settings)
     result = scanner.scan(data)

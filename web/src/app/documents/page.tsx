@@ -83,6 +83,10 @@ export default function DocumentsPage() {
           </Button>
         </div>
       </div>
+      <p className="text-xs text-neutral-500">
+        Accepts PDF, ZIP of PDFs, and .eml/.msg. For Word/Excel/PowerPoint files, export
+        to PDF from that application first, then upload the PDF.
+      </p>
       {uploadError && <p className="text-sm text-red-600">{uploadError}</p>}
       {rejectedEntries.length > 0 && (
         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
