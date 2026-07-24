@@ -24,6 +24,7 @@ export default function DocumentsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [rejectedEntries, setRejectedEntries] = useState<{ filename: string; reason: string }[]>([]);
 
   useEffect(() => {
     if (!getToken()) router.replace("/login");
@@ -44,7 +45,8 @@ export default function DocumentsPage() {
     if (!file) return;
     setUploading(true);
     setUploadError(null);
-    const { error } = await api.POST("/v1/documents", {
+    setRejectedEntries([]);
+    const { data, error } = await api.POST("/v1/documents", {
       // @ts-expect-error - openapi-fetch's multipart/form-data typing wants FormData directly as body
       body: (() => {
         const form = new FormData();
@@ -57,6 +59,9 @@ export default function DocumentsPage() {
       setUploadError(problemMessage(error));
       return;
     }
+    // ZIP batches: some entries may fail validation without failing the whole upload
+    // (specs/05-redaction-pipeline.md Stage 1) — surface them instead of dropping silently.
+    if (data?.rejected?.length) setRejectedEntries(data.rejected);
     queryClient.invalidateQueries({ queryKey: ["documents"] });
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
@@ -69,16 +74,28 @@ export default function DocumentsPage() {
           <input
             ref={fileInputRef}
             type="file"
-            accept="application/pdf"
+            accept="application/pdf,.zip,application/zip"
             className="hidden"
             onChange={handleFileChange}
           />
           <Button onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-            {uploading ? "Uploading…" : "Upload document"}
+            {uploading ? "Uploading…" : "Upload document or ZIP batch"}
           </Button>
         </div>
       </div>
       {uploadError && <p className="text-sm text-red-600">{uploadError}</p>}
+      {rejectedEntries.length > 0 && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+          <p className="font-medium">{rejectedEntries.length} file(s) in the ZIP were skipped:</p>
+          <ul className="mt-1 list-disc pl-5">
+            {rejectedEntries.map((entry) => (
+              <li key={entry.filename}>
+                {entry.filename} — {entry.reason}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <Card>
         <CardHeader>

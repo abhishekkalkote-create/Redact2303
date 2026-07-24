@@ -11,9 +11,18 @@ from app.models.exemption_code import ExemptionCode
 from app.models.manifest import Manifest
 from app.models.membership import Membership
 from app.models.redaction_candidate import RedactionCandidate
-from app.pipeline.intake import content_sha256, validate_and_scan
+from app.pipeline.intake import (
+    IntakeError,
+    content_sha256,
+    expand_zip,
+    is_zip_mime,
+    sniff_mime,
+    validate_and_scan,
+)
 from app.pipeline.run import process_document
 from app.schemas.document import (
+    BatchRejection,
+    BatchUploadResult,
     BBox,
     CandidateOut,
     DocumentAssignPatch,
@@ -27,45 +36,24 @@ from app.storage import get_store
 router = APIRouter(tags=["documents"])
 
 
-@router.get("/documents", response_model=list[DocumentOut])
-async def list_documents(
-    membership: Membership = Depends(get_membership),
-    db: AsyncSession = Depends(get_org_db),
-    status: str | None = Query(default=None),
-    request_id: str | None = Query(default=None),
-    assignee: str | None = Query(default=None, description='"me" or a user id'),
-) -> list[Document]:
-    """specs/01-product-spec.md US-16: "queue dashboards" — `assignee=me` is the "my
-    queue" filter; a supervisor omits it (or passes another user's id) for "team queue"."""
-    query = select(Document).order_by(Document.created_at.desc())
-    if status:
-        query = query.where(Document.status == status)
-    if request_id:
-        query = query.where(Document.request_id == request_id)
-    if assignee:
-        query = query.where(Document.assignee_id == (membership.user_id if assignee == "me" else assignee))
-    result = await db.execute(query)
-    return list(result.scalars().all())
-
-
-@router.post("/documents", response_model=DocumentOut, status_code=201)
-async def upload_document(
-    file: UploadFile,
-    request_id: str | None = Form(default=None),
-    membership: Membership = Depends(get_membership),
-    db: AsyncSession = Depends(get_org_db),
+async def _create_and_process_document(
+    db: AsyncSession,
+    membership: Membership,
+    *,
+    filename: str,
+    mime_type: str,
+    data: bytes,
+    request_id: str | None,
+    source: str,
 ) -> Document:
-    data = await file.read()
-    mime_type = validate_and_scan(data)  # raises IntakeError (422) on failure
-
     doc_id = new_id("doc")
     store = get_store()
     original_key = f"originals/{doc_id}"
     store.put(membership.org_id, original_key, data)
 
     document = Document(
-        id=doc_id, org_id=membership.org_id, filename=file.filename or "upload.pdf",
-        mime_type=mime_type, source="upload", status="uploaded", request_id=request_id,
+        id=doc_id, org_id=membership.org_id, filename=filename,
+        mime_type=mime_type, source=source, status="uploaded", request_id=request_id,
         uploaded_by=membership.user_id, s3_key_original=original_key,
         content_sha256=content_sha256(data),
     )
@@ -94,6 +82,68 @@ async def upload_document(
 
     await db.refresh(document)
     return document
+
+
+@router.get("/documents", response_model=list[DocumentOut])
+async def list_documents(
+    membership: Membership = Depends(get_membership),
+    db: AsyncSession = Depends(get_org_db),
+    status: str | None = Query(default=None),
+    request_id: str | None = Query(default=None),
+    assignee: str | None = Query(default=None, description='"me" or a user id'),
+) -> list[Document]:
+    """specs/01-product-spec.md US-16: "queue dashboards" — `assignee=me` is the "my
+    queue" filter; a supervisor omits it (or passes another user's id) for "team queue"."""
+    query = select(Document).order_by(Document.created_at.desc())
+    if status:
+        query = query.where(Document.status == status)
+    if request_id:
+        query = query.where(Document.request_id == request_id)
+    if assignee:
+        query = query.where(Document.assignee_id == (membership.user_id if assignee == "me" else assignee))
+    result = await db.execute(query)
+    return list(result.scalars().all())
+
+
+@router.post("/documents", response_model=BatchUploadResult, status_code=201)
+async def upload_document(
+    file: UploadFile,
+    request_id: str | None = Form(default=None),
+    membership: Membership = Depends(get_membership),
+    db: AsyncSession = Depends(get_org_db),
+) -> BatchUploadResult:
+    """specs/04-api-spec.md upload finalize: "creates document(s)". A ZIP is expanded
+    into child documents (specs/05-redaction-pipeline.md Stage 1: "flatten one level;
+    nested zips rejected") — bad entries are collected in `rejected` rather than failing
+    the whole batch; a plain PDF still raises IntakeError (422) on validation failure,
+    same as before ZIP support existed."""
+    data = await file.read()
+
+    if is_zip_mime(sniff_mime(data)):
+        entries, rejected_pairs = expand_zip(data)  # raises IntakeError on archive-level failure
+        documents: list[Document] = []
+        for filename, member_bytes in entries:
+            try:
+                mime_type = validate_and_scan(member_bytes)
+            except IntakeError as exc:
+                rejected_pairs.append((filename, exc.detail or "validation failed"))
+                continue
+            document = await _create_and_process_document(
+                db, membership, filename=filename, mime_type=mime_type, data=member_bytes,
+                request_id=request_id, source="batch",
+            )
+            documents.append(document)
+        return BatchUploadResult(
+            documents=[DocumentOut.model_validate(d) for d in documents],
+            rejected=[BatchRejection(filename=f, reason=r) for f, r in rejected_pairs],
+        )
+
+    mime_type = validate_and_scan(data)  # raises IntakeError (422) on failure
+    document = await _create_and_process_document(
+        db, membership, filename=file.filename or "upload.pdf", mime_type=mime_type,
+        data=data, request_id=request_id, source="upload",
+    )
+    return BatchUploadResult(documents=[DocumentOut.model_validate(document)], rejected=[])
 
 
 @router.get("/documents/{doc_id}", response_model=DocumentOut)

@@ -151,7 +151,14 @@ export interface paths {
          */
         get: operations["list_documents_v1_documents_get"];
         put?: never;
-        /** Upload Document */
+        /**
+         * Upload Document
+         * @description specs/04-api-spec.md upload finalize: "creates document(s)". A ZIP is expanded
+         *     into child documents (specs/05-redaction-pipeline.md Stage 1: "flatten one level;
+         *     nested zips rejected") — bad entries are collected in `rejected` rather than failing
+         *     the whole batch; a plain PDF still raises IntakeError (422) on validation failure,
+         *     same as before ZIP support existed.
+         */
         post: operations["upload_document_v1_documents_post"];
         delete?: never;
         options?: never;
@@ -555,6 +562,25 @@ export interface components {
             x: number;
             /** Y */
             y: number;
+        };
+        /** BatchRejection */
+        BatchRejection: {
+            /** Filename */
+            filename: string;
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * BatchUploadResult
+         * @description specs/04-api-spec.md: upload finalize "creates document(s)" — always plural, since
+         *     a ZIP batch (specs/05-redaction-pipeline.md Stage 1) may create many. A single-file
+         *     upload is just the degenerate case: one document, zero rejections.
+         */
+        BatchUploadResult: {
+            /** Documents */
+            documents: components["schemas"]["DocumentOut"][];
+            /** Rejected */
+            rejected: components["schemas"]["BatchRejection"][];
         };
         /** Body_upload_document_v1_documents_post */
         Body_upload_document_v1_documents_post: {
@@ -1300,7 +1326,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DocumentOut"];
+                    "application/json": components["schemas"]["BatchUploadResult"];
                 };
             };
             /** @description Validation Error */

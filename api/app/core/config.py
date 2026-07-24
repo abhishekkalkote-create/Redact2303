@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     clamd_port: int = 3310
 
     max_upload_size_bytes: int = 500 * 1024 * 1024  # specs/01-product-spec.md US-1: 500MB single-file cap
+    max_zip_upload_size_bytes: int = 2 * 1024 * 1024 * 1024  # US-1: 2GB ZIP batch cap
 
     # app/llm/provider.py — false means "use FakeLLMProvider" in local dev (no AWS
     # Bedrock account with model access exists yet).

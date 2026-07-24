@@ -27,6 +27,20 @@ class DocumentAssignPatch(BaseModel):
     request_id: str | None = None
 
 
+class BatchRejection(BaseModel):
+    filename: str
+    reason: str
+
+
+class BatchUploadResult(BaseModel):
+    """specs/04-api-spec.md: upload finalize "creates document(s)" — always plural, since
+    a ZIP batch (specs/05-redaction-pipeline.md Stage 1) may create many. A single-file
+    upload is just the degenerate case: one document, zero rejections."""
+
+    documents: list[DocumentOut]
+    rejected: list[BatchRejection]
+
+
 class BBox(BaseModel):
     x: float
     y: float

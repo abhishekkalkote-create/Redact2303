@@ -29,6 +29,49 @@
         "title": "BBox",
         "type": "object"
       },
+      "BatchRejection": {
+        "properties": {
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "filename",
+          "reason"
+        ],
+        "title": "BatchRejection",
+        "type": "object"
+      },
+      "BatchUploadResult": {
+        "description": "specs/04-api-spec.md: upload finalize \"creates document(s)\" \u2014 always plural, since\na ZIP batch (specs/05-redaction-pipeline.md Stage 1) may create many. A single-file\nupload is just the degenerate case: one document, zero rejections.",
+        "properties": {
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentOut"
+            },
+            "title": "Documents",
+            "type": "array"
+          },
+          "rejected": {
+            "items": {
+              "$ref": "#/components/schemas/BatchRejection"
+            },
+            "title": "Rejected",
+            "type": "array"
+          }
+        },
+        "required": [
+          "documents",
+          "rejected"
+        ],
+        "title": "BatchUploadResult",
+        "type": "object"
+      },
       "Body_upload_document_v1_documents_post": {
         "properties": {
           "file": {
@@ -1950,6 +1993,7 @@
         ]
       },
       "post": {
+        "description": "specs/04-api-spec.md upload finalize: \"creates document(s)\". A ZIP is expanded\ninto child documents (specs/05-redaction-pipeline.md Stage 1: \"flatten one level;\nnested zips rejected\") \u2014 bad entries are collected in `rejected` rather than failing\nthe whole batch; a plain PDF still raises IntakeError (422) on validation failure,\nsame as before ZIP support existed.",
         "operationId": "upload_document_v1_documents_post",
         "parameters": [
           {
@@ -2000,7 +2044,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DocumentOut"
+                  "$ref": "#/components/schemas/BatchUploadResult"
                 }
               }
             },
