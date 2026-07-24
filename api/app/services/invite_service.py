@@ -10,6 +10,7 @@ from app.db.session import AsyncSessionLocal, org_session, user_session
 from app.models.invite import Invite
 from app.models.membership import Membership
 from app.models.user import User
+from app.services.audit_service import write_audit_event
 
 INVITE_TTL_DAYS = 7
 
@@ -35,6 +36,12 @@ async def create_invite(
     # transaction owned by org_session; flush (not commit) and let that transaction's own
     # `async with` block commit on normal exit. Committing here would close the transaction
     # out from under the dependency and break any further use of `session` in this request.
+    await session.flush()
+    await write_audit_event(
+        session, org_id=org_id, actor_type="user", actor_id=invited_by,
+        action="member.invited", object_type="invite", object_id=invite.id,
+        metadata={"role": role},  # content-free: no email in audit metadata
+    )
     await session.flush()
     await session.refresh(invite)
     return invite, token
@@ -87,6 +94,11 @@ async def accept_invite(token: str, user: User) -> Membership:
         db_invite = await session.get(Invite, invite.id)
         assert db_invite is not None, "invite row disappeared between lookup and accept"
         db_invite.accepted_at = datetime.now(UTC)
+        await write_audit_event(
+            session, org_id=invite.org_id, actor_type="user", actor_id=user.id,
+            action="member.invite_accepted", object_type="membership", object_id=membership.id,
+            metadata={"role": invite.role},
+        )
         await session.flush()
         await session.refresh(membership)
         return membership

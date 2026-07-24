@@ -31,6 +31,9 @@ out/
 # guidance, not the older ignore-it advice) — *.hcl above would otherwise catch these too.
 !.terraform.lock.hcl
 
+# Local dev content storage (app/storage/local.py stand-in for the S3 bucket)
+.local-storage/
+
 # OS / editor
 .DS_Store
 .vscode/

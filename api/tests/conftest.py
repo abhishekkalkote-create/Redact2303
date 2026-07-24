@@ -20,12 +20,26 @@ async def db_engine():
     await engine.dispose()
 
 
+# Tests deliberately open multiple separate `async with session.begin():` blocks (to
+# simulate distinct request transactions with different org contexts) — each one commits
+# immediately, so a single rollback-on-teardown does nothing. TRUNCATE instead: it isn't
+# an RLS-governed row operation and (unlike DELETE) wasn't revoked on append-only tables,
+# so this works without weakening the production append-only guarantee it's testing.
+TENANT_TABLES = [
+    "usage_records", "audit_events", "export_artifacts", "review_actions",
+    "redaction_candidates", "manifests", "processing_jobs", "document_pages", "documents",
+    "requests", "exemption_codes", "invites", "memberships", "organizations", "users",
+]
+
+
 @pytest_asyncio.fixture
 async def db_session(db_engine) -> AsyncSession:
     session_factory = async_sessionmaker(db_engine, expire_on_commit=False)
     async with session_factory() as session:
         yield session
         await session.rollback()
+        await session.execute(text(f"TRUNCATE {', '.join(TENANT_TABLES)} CASCADE"))
+        await session.commit()
 
 
 async def set_org(session: AsyncSession, org_id: str) -> None:

@@ -9,7 +9,7 @@ from app.core.errors import (
     unhandled_error_handler,
     validation_error_handler,
 )
-from app.routers import auth, health, invites, members, orgs
+from app.routers import auth, documents, exports, health, invites, members, orgs, review
 
 settings = get_settings()
 
@@ -40,3 +40,6 @@ app.include_router(auth.router, prefix=settings.api_v1_prefix)
 app.include_router(orgs.router, prefix=settings.api_v1_prefix)
 app.include_router(members.router, prefix=settings.api_v1_prefix)
 app.include_router(invites.router, prefix=settings.api_v1_prefix)
+app.include_router(documents.router, prefix=settings.api_v1_prefix)
+app.include_router(review.router, prefix=settings.api_v1_prefix)
+app.include_router(exports.router, prefix=settings.api_v1_prefix)

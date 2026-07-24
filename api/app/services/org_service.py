@@ -10,6 +10,8 @@ from app.models.membership import Membership
 from app.models.organization import DEFAULT_SETTINGS, Organization
 from app.models.user import User
 from app.schemas.organization import OrgCreate
+from app.services.audit_service import write_audit_event
+from app.services.exemption_service import clone_library_for_org
 
 MAX_SLUG_ATTEMPTS = 5
 
@@ -71,6 +73,18 @@ async def create_org(owner: User, payload: OrgCreate) -> Organization:
                 org_scoped_session.add(
                     Membership(org_id=org_id, user_id=owner.id, role="agency_admin", status="active")
                 )
+                await org_scoped_session.flush()
+
+                # specs/06-exemption-taxonomy.md: "Orgs choosing jurisdiction at onboarding
+                # get federal + their state library pre-cloned."
+                await clone_library_for_org(org_scoped_session, org_id, org.jurisdiction_state)
+
+                await write_audit_event(
+                    org_scoped_session, org_id=org_id, actor_type="user", actor_id=owner.id,
+                    action="org.created", object_type="organization", object_id=org_id,
+                    metadata={"org_type": org.org_type, "jurisdiction_state": org.jurisdiction_state},
+                )
+
                 await org_scoped_session.flush()
                 await org_scoped_session.refresh(org)
                 return org
