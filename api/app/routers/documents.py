@@ -39,6 +39,7 @@ from app.schemas.document import (
 )
 from app.schemas.request import RequestCreate, RequestOut
 from app.services.audit_service import write_audit_event
+from app.services.document_service import list_documents as list_documents_query
 from app.services.request_service import create_request
 from app.storage import get_store
 
@@ -100,18 +101,18 @@ async def list_documents(
     status: str | None = Query(default=None),
     request_id: str | None = Query(default=None),
     assignee: str | None = Query(default=None, description='"me" or a user id'),
+    escalated: bool | None = Query(default=None, description="only documents with an active candidate escalation"),
+    sort: str | None = Query(default=None, description='"low_confidence_first" or omit for newest-first'),
 ) -> list[Document]:
     """specs/01-product-spec.md US-16: "queue dashboards" — `assignee=me` is the "my
-    queue" filter; a supervisor omits it (or passes another user's id) for "team queue"."""
-    query = select(Document).order_by(Document.created_at.desc())
-    if status:
-        query = query.where(Document.status == status)
-    if request_id:
-        query = query.where(Document.request_id == request_id)
-    if assignee:
-        query = query.where(Document.assignee_id == (membership.user_id if assignee == "me" else assignee))
-    result = await db.execute(query)
-    return list(result.scalars().all())
+    queue" filter; a supervisor omits it (or passes another user's id) for "team queue".
+    `escalated=true` is US-10's supervisor escalation queue. `sort=low_confidence_first`
+    is the Dashboard's "My queue ... sorted low-confidence-first option" (specs/07-ui-spec.md
+    screen 2)."""
+    assignee_id = membership.user_id if assignee == "me" else assignee
+    return await list_documents_query(
+        db, status=status, request_id=request_id, assignee_id=assignee_id, escalated=escalated, sort=sort,
+    )
 
 
 @router.post("/documents", response_model=BatchUploadResult, status_code=201)
@@ -248,6 +249,7 @@ async def get_manifest(doc_id: str, db: AsyncSession = Depends(get_org_db)) -> M
             exemption_code_id=c.exemption_code_id, exemption_code=code,
             ai_justification=c.ai_justification, confidence=c.confidence, state=c.state,
             recurrence_group_id=c.recurrence_group_id,
+            escalated_at=c.escalated_at, escalated_note=c.escalated_note,
         )
         for c, code in result.all()
     ]

@@ -116,6 +116,45 @@ export interface paths {
         patch: operations["patch_candidate_route_v1_candidates__candidate_id__patch"];
         trace?: never;
     };
+    "/v1/candidates/{candidate_id}:escalate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Escalate Candidate Route
+         * @description specs/07-ui-spec.md screen 3: "[Approve] [Reject] [Escalate]" — any reviewer can
+         *     flag a candidate for supervisor attention; specs/01-product-spec.md US-10 is the
+         *     supervisor-side escalation queue this feeds (GET /documents?escalated=true).
+         */
+        post: operations["escalate_candidate_route_v1_candidates__candidate_id__escalate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/candidates/{candidate_id}:resolve-escalation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve Escalation Route */
+        post: operations["resolve_escalation_route_v1_candidates__candidate_id__resolve_escalation_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/certificates/{certificate_id}/verify": {
         parameters: {
             query?: never;
@@ -148,6 +187,9 @@ export interface paths {
          * List Documents
          * @description specs/01-product-spec.md US-16: "queue dashboards" — `assignee=me` is the "my
          *     queue" filter; a supervisor omits it (or passes another user's id) for "team queue".
+         *     `escalated=true` is US-10's supervisor escalation queue. `sort=low_confidence_first`
+         *     is the Dashboard's "My queue ... sorted low-confidence-first option" (specs/07-ui-spec.md
+         *     screen 2).
          */
         get: operations["list_documents_v1_documents_get"];
         put?: never;
@@ -620,6 +662,11 @@ export interface components {
             /** Page No */
             page_no: number;
         };
+        /** CandidateEscalateRequest */
+        CandidateEscalateRequest: {
+            /** Note */
+            note?: string | null;
+        };
         /** CandidateOut */
         CandidateOut: {
             /** Ai Justification */
@@ -629,6 +676,10 @@ export interface components {
             confidence: string;
             /** Display Text */
             display_text: string;
+            /** Escalated At */
+            escalated_at?: string | null;
+            /** Escalated Note */
+            escalated_note?: string | null;
             /** Exemption Code */
             exemption_code?: string | null;
             /** Exemption Code Id */
@@ -1239,6 +1290,82 @@ export interface operations {
             };
         };
     };
+    escalate_candidate_route_v1_candidates__candidate_id__escalate_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                candidate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateEscalateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_escalation_route_v1_candidates__candidate_id__resolve_escalation_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                candidate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateEscalateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     verify_certificate_route_v1_certificates__certificate_id__verify_get: {
         parameters: {
             query?: never;
@@ -1277,6 +1404,10 @@ export interface operations {
                 request_id?: string | null;
                 /** @description "me" or a user id */
                 assignee?: string | null;
+                /** @description only documents with an active candidate escalation */
+                escalated?: boolean | null;
+                /** @description "low_confidence_first" or omit for newest-first */
+                sort?: string | null;
             };
             header?: {
                 authorization?: string | null;

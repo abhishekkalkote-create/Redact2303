@@ -1,4 +1,6 @@
-from sqlalchemy import JSON, ForeignKey, Integer, String
+from datetime import datetime
+
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.ids import new_id
@@ -38,3 +40,8 @@ class RedactionCandidate(Base, TimestampMixin):
     confidence: Mapped[str] = mapped_column(String, nullable=False)
     state: Mapped[str] = mapped_column(String, nullable=False, default="suggested")
     detector_versions: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    # specs/01-product-spec.md US-10: a reviewer's "Escalate" action — independent of
+    # `state`, which stays suggested/approved/rejected regardless of escalation.
+    escalated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    escalated_by: Mapped[str | None] = mapped_column(String, ForeignKey("users.id"), nullable=True)
+    escalated_note: Mapped[str | None] = mapped_column(String, nullable=True)

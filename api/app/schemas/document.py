@@ -66,8 +66,14 @@ class CandidateOut(BaseModel):
     confidence: str
     state: str
     recurrence_group_id: str | None = None
+    escalated_at: datetime | None = None
+    escalated_note: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+class CandidateEscalateRequest(BaseModel):
+    note: str | None = None
 
 
 class ManifestOut(BaseModel):

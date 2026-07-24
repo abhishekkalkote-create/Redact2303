@@ -10,6 +10,7 @@ from app.schemas.document import (
     BulkUpdateRequest,
     BulkUpdateResponse,
     CandidateCreate,
+    CandidateEscalateRequest,
     CandidateOut,
     CandidatePatch,
     DocumentOut,
@@ -22,7 +23,9 @@ from app.services.review_service import (
     bulk_update_candidates,
     complete_review,
     create_manual_candidate,
+    escalate_candidate,
     patch_candidate,
+    resolve_escalation,
     return_document,
 )
 from app.services.search_service import search_and_redact
@@ -39,6 +42,7 @@ def _to_out(candidate: RedactionCandidate) -> CandidateOut:
         exemption_code_id=candidate.exemption_code_id, exemption_code=None,
         ai_justification=candidate.ai_justification, confidence=candidate.confidence,
         state=candidate.state, recurrence_group_id=candidate.recurrence_group_id,
+        escalated_at=candidate.escalated_at, escalated_note=candidate.escalated_note,
     )
 
 
@@ -135,3 +139,28 @@ async def bulk_update_route(
         exemption_code_id=payload.exemption_code_id,
     )
     return BulkUpdateResponse(updated=[_to_out(c) for c in updated])
+
+
+@router.post("/candidates/{candidate_id}:escalate", response_model=CandidateOut)
+async def escalate_candidate_route(
+    candidate_id: str,
+    payload: CandidateEscalateRequest,
+    membership: Membership = Depends(get_membership),
+    db: AsyncSession = Depends(get_org_db),
+) -> CandidateOut:
+    """specs/07-ui-spec.md screen 3: "[Approve] [Reject] [Escalate]" — any reviewer can
+    flag a candidate for supervisor attention; specs/01-product-spec.md US-10 is the
+    supervisor-side escalation queue this feeds (GET /documents?escalated=true)."""
+    candidate = await escalate_candidate(db, membership.org_id, candidate_id, membership.user_id, payload.note)
+    return _to_out(candidate)
+
+
+@router.post("/candidates/{candidate_id}:resolve-escalation", response_model=CandidateOut)
+async def resolve_escalation_route(
+    candidate_id: str,
+    payload: CandidateEscalateRequest,
+    membership: Membership = Depends(require_role("agency_admin", "supervisor")),
+    db: AsyncSession = Depends(get_org_db),
+) -> CandidateOut:
+    candidate = await resolve_escalation(db, membership.org_id, candidate_id, membership.user_id, payload.note)
+    return _to_out(candidate)

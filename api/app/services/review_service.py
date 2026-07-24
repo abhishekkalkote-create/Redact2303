@@ -2,6 +2,8 @@
 `exemption_code_id` NOT NULL (enforced by a DB CHECK — this service just gives a clean 4xx
 instead of letting the constraint violation surface as a raw 500)."""
 
+from datetime import UTC, datetime
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -289,3 +291,59 @@ async def return_document(session: AsyncSession, org_id: str, doc_id: str, user_
     await session.flush()
     await session.refresh(document)
     return document
+
+
+async def escalate_candidate(
+    session: AsyncSession, org_id: str, candidate_id: str, user_id: str, note: str | None
+) -> RedactionCandidate:
+    """specs/01-product-spec.md US-10 / specs/07-ui-spec.md screen 3: "[Approve] [Reject]
+    [Escalate]" — a third action independent of approve/reject; `state` is untouched."""
+    candidate = await session.get(RedactionCandidate, candidate_id)
+    if candidate is None:
+        raise NotFoundError("Candidate not found")
+
+    candidate.escalated_at = datetime.now(UTC)
+    candidate.escalated_by = user_id
+    candidate.escalated_note = note
+    session.add(
+        ReviewAction(
+            id=new_id("ract"), org_id=org_id, doc_id=candidate.doc_id, candidate_id=candidate.id,
+            user_id=user_id, action="escalate", payload=None, note=note,
+        )
+    )
+    await write_audit_event(
+        session, org_id=org_id, actor_type="user", actor_id=user_id,
+        action="candidate.escalated", object_type="document", object_id=candidate.doc_id,
+        metadata={"candidate_id": candidate.id},
+    )
+    await session.flush()
+    await session.refresh(candidate)
+    return candidate
+
+
+async def resolve_escalation(
+    session: AsyncSession, org_id: str, candidate_id: str, user_id: str, note: str | None
+) -> RedactionCandidate:
+    candidate = await session.get(RedactionCandidate, candidate_id)
+    if candidate is None:
+        raise NotFoundError("Candidate not found")
+    if candidate.escalated_at is None:
+        raise ApiError(422, "Unprocessable Entity", "Candidate is not currently escalated")
+
+    candidate.escalated_at = None
+    candidate.escalated_by = None
+    candidate.escalated_note = None
+    session.add(
+        ReviewAction(
+            id=new_id("ract"), org_id=org_id, doc_id=candidate.doc_id, candidate_id=candidate.id,
+            user_id=user_id, action="resolve_escalation", payload=None, note=note,
+        )
+    )
+    await write_audit_event(
+        session, org_id=org_id, actor_type="user", actor_id=user_id,
+        action="candidate.escalation_resolved", object_type="document", object_id=candidate.doc_id,
+        metadata={"candidate_id": candidate.id},
+    )
+    await session.flush()
+    await session.refresh(candidate)
+    return candidate

@@ -216,6 +216,23 @@
         "title": "CandidateCreate",
         "type": "object"
       },
+      "CandidateEscalateRequest": {
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "title": "CandidateEscalateRequest",
+        "type": "object"
+      },
       "CandidateOut": {
         "properties": {
           "ai_justification": {
@@ -239,6 +256,29 @@
           "display_text": {
             "title": "Display Text",
             "type": "string"
+          },
+          "escalated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Escalated At"
+          },
+          "escalated_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Escalated Note"
           },
           "exemption_code": {
             "anyOf": [
@@ -1840,6 +1880,175 @@
         ]
       }
     },
+    "/v1/candidates/{candidate_id}:escalate": {
+      "post": {
+        "description": "specs/07-ui-spec.md screen 3: \"[Approve] [Reject] [Escalate]\" \u2014 any reviewer can\nflag a candidate for supervisor attention; specs/01-product-spec.md US-10 is the\nsupervisor-side escalation queue this feeds (GET /documents?escalated=true).",
+        "operationId": "escalate_candidate_route_v1_candidates__candidate_id__escalate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "candidate_id",
+            "required": true,
+            "schema": {
+              "title": "Candidate Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CandidateEscalateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidateOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Escalate Candidate Route",
+        "tags": [
+          "review"
+        ]
+      }
+    },
+    "/v1/candidates/{candidate_id}:resolve-escalation": {
+      "post": {
+        "operationId": "resolve_escalation_route_v1_candidates__candidate_id__resolve_escalation_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "candidate_id",
+            "required": true,
+            "schema": {
+              "title": "Candidate Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CandidateEscalateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidateOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resolve Escalation Route",
+        "tags": [
+          "review"
+        ]
+      }
+    },
     "/v1/certificates/{certificate_id}/verify": {
       "get": {
         "description": "Deliberately public \u2014 no auth dependency. See migration 0004 for the RLS policy\nthat makes this safe (declare-the-exact-id lookup, not a listing).",
@@ -1885,7 +2094,7 @@
     },
     "/v1/documents": {
       "get": {
-        "description": "specs/01-product-spec.md US-16: \"queue dashboards\" \u2014 `assignee=me` is the \"my\nqueue\" filter; a supervisor omits it (or passes another user's id) for \"team queue\".",
+        "description": "specs/01-product-spec.md US-16: \"queue dashboards\" \u2014 `assignee=me` is the \"my\nqueue\" filter; a supervisor omits it (or passes another user's id) for \"team queue\".\n`escalated=true` is US-10's supervisor escalation queue. `sort=low_confidence_first`\nis the Dashboard's \"My queue ... sorted low-confidence-first option\" (specs/07-ui-spec.md\nscreen 2).",
         "operationId": "list_documents_v1_documents_get",
         "parameters": [
           {
@@ -1936,6 +2145,42 @@
               ],
               "description": "\"me\" or a user id",
               "title": "Assignee"
+            }
+          },
+          {
+            "description": "only documents with an active candidate escalation",
+            "in": "query",
+            "name": "escalated",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "only documents with an active candidate escalation",
+              "title": "Escalated"
+            }
+          },
+          {
+            "description": "\"low_confidence_first\" or omit for newest-first",
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "\"low_confidence_first\" or omit for newest-first",
+              "title": "Sort"
             }
           },
           {

@@ -30,6 +30,8 @@ ACTIONS = frozenset(
         "candidate.approved",
         "candidate.rejected",
         "candidate.modified",
+        "candidate.escalated",
+        "candidate.escalation_resolved",
         "review.completed",
         "review.approved",
         "review.returned",
