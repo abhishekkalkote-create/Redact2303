@@ -12,6 +12,7 @@ from app.core.errors import (
 from app.routers import (
     audit,
     auth,
+    dashboard,
     documents,
     exemption_codes,
     exports,
@@ -58,3 +59,4 @@ app.include_router(exports.router, prefix=settings.api_v1_prefix)
 app.include_router(exemption_codes.router, prefix=settings.api_v1_prefix)
 app.include_router(requests.router, prefix=settings.api_v1_prefix)
 app.include_router(audit.router, prefix=settings.api_v1_prefix)
+app.include_router(dashboard.router, prefix=settings.api_v1_prefix)

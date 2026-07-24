@@ -16,6 +16,214 @@ import { clearToken, getToken } from "@/lib/auth";
 
 const ROLES = ["reviewer", "supervisor", "agency_admin", "billing_admin"];
 
+const KPI_LABELS: Record<string, string> = {
+  new: "New",
+  processing: "Processing",
+  ready_for_review: "Ready for review",
+  in_review: "In review",
+  awaiting_approval: "Awaiting approval",
+  completed: "Completed",
+};
+
+const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+  ready_for_review: "default",
+  in_review: "default",
+  awaiting_approval: "secondary",
+  review_complete: "secondary",
+  exported: "secondary",
+  error: "destructive",
+};
+
+type QueueTab = "mine" | "team" | "exports";
+
+function QueueDashboard() {
+  const [tab, setTab] = useState<QueueTab>("mine");
+  const [lowConfidenceFirst, setLowConfidenceFirst] = useState(false);
+
+  const meQuery = useQuery({
+    queryKey: ["me"],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/v1/orgs/current/members/me", {});
+      if (error) throw error;
+      return data;
+    },
+  });
+  const isSupervisor = meQuery.data?.role === "supervisor" || meQuery.data?.role === "agency_admin";
+
+  const summaryQuery = useQuery({
+    queryKey: ["dashboard-summary"],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/v1/dashboard/summary", {});
+      if (error) throw error;
+      return data;
+    },
+    refetchInterval: 10000,
+  });
+
+  const myQueueQuery = useQuery({
+    queryKey: ["documents", "mine", lowConfidenceFirst],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/v1/documents", {
+        params: {
+          query: {
+            assignee: "me",
+            ...(lowConfidenceFirst ? { sort: "low_confidence_first" } : {}),
+          },
+        },
+      });
+      if (error) throw error;
+      return data;
+    },
+    enabled: tab === "mine",
+  });
+
+  const teamQueueQuery = useQuery({
+    queryKey: ["dashboard-team-queue"],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/v1/dashboard/team-queue", {});
+      if (error) throw error;
+      return data;
+    },
+    enabled: tab === "team" && isSupervisor,
+  });
+
+  const exportsQuery = useQuery({
+    queryKey: ["exports"],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/v1/exports", {});
+      if (error) throw error;
+      return data;
+    },
+    enabled: tab === "exports",
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Queues</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {Object.entries(KPI_LABELS).map(([key, label]) => (
+            <div key={key} className="rounded-lg border p-3">
+              <p className="text-xs text-neutral-500">{label}</p>
+              <p className="text-2xl font-semibold">
+                {summaryQuery.isLoading ? "…" : (summaryQuery.data?.[key as keyof typeof summaryQuery.data] ?? 0)}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2 border-b pb-2">
+          <Button variant={tab === "mine" ? "default" : "outline"} size="sm" onClick={() => setTab("mine")}>
+            My queue
+          </Button>
+          {isSupervisor && (
+            <Button variant={tab === "team" ? "default" : "outline"} size="sm" onClick={() => setTab("team")}>
+              Team queue
+            </Button>
+          )}
+          <Button variant={tab === "exports" ? "default" : "outline"} size="sm" onClick={() => setTab("exports")}>
+            Recent exports
+          </Button>
+        </div>
+
+        {tab === "mine" && (
+          <div className="flex flex-col gap-3">
+            <label className="flex items-center gap-2 text-sm text-neutral-600">
+              <input
+                type="checkbox"
+                checked={lowConfidenceFirst}
+                onChange={(e) => setLowConfidenceFirst(e.target.checked)}
+              />
+              Sort low-confidence-first
+            </label>
+            {myQueueQuery.isLoading ? (
+              <p className="text-sm text-neutral-500">Loading…</p>
+            ) : myQueueQuery.data?.length === 0 ? (
+              <p className="text-sm text-neutral-500">Nothing assigned to you right now.</p>
+            ) : (
+              <ul className="flex flex-col divide-y">
+                {myQueueQuery.data?.map((doc) => (
+                  <li key={doc.id} className="flex items-center justify-between py-2">
+                    <Link href={`/documents/${doc.id}/review`} className="font-medium hover:underline">
+                      {doc.filename}
+                    </Link>
+                    <div className="flex items-center gap-2 text-xs text-neutral-500">
+                      {doc.due_date && <span>due {new Date(doc.due_date).toLocaleDateString()}</span>}
+                      <Badge variant={STATUS_VARIANT[doc.status] ?? "outline"}>{doc.status}</Badge>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        {tab === "team" && isSupervisor && (
+          <div className="flex flex-col gap-2">
+            {teamQueueQuery.isLoading ? (
+              <p className="text-sm text-neutral-500">Loading…</p>
+            ) : teamQueueQuery.data?.length === 0 ? (
+              <p className="text-sm text-neutral-500">No active reviewers yet.</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-neutral-500">
+                    <th className="py-1 font-medium">Reviewer</th>
+                    <th className="py-1 font-medium">Assigned</th>
+                    <th className="py-1 font-medium">Overdue</th>
+                    <th className="py-1 font-medium">Due soon</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {teamQueueQuery.data?.map((row) => (
+                    <tr key={row.user_id} className="border-b last:border-0">
+                      <td className="py-2">
+                        {row.name} <span className="text-neutral-500">({row.email})</span>
+                      </td>
+                      <td className="py-2">{row.assigned_count}</td>
+                      <td className="py-2">
+                        {row.overdue_count > 0 ? (
+                          <Badge variant="destructive">{row.overdue_count}</Badge>
+                        ) : (
+                          row.overdue_count
+                        )}
+                      </td>
+                      <td className="py-2">{row.due_soon_count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {tab === "exports" && (
+          <div className="flex flex-col gap-2">
+            {exportsQuery.isLoading ? (
+              <p className="text-sm text-neutral-500">Loading…</p>
+            ) : exportsQuery.data?.length === 0 ? (
+              <p className="text-sm text-neutral-500">No exports yet.</p>
+            ) : (
+              <ul className="flex flex-col divide-y">
+                {exportsQuery.data?.map((exp) => (
+                  <li key={exp.id} className="flex items-center justify-between py-2 text-sm">
+                    <span>
+                      {exp.type} <span className="text-neutral-500">({exp.doc_id})</span>
+                    </span>
+                    <span className="text-xs text-neutral-500">{new Date(exp.created_at).toLocaleString()}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -87,7 +295,7 @@ export default function DashboardPage() {
   const org = orgQuery.data;
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-8">
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">{org.name}</h1>
@@ -107,6 +315,8 @@ export default function DashboardPage() {
       </div>
 
       <Separator />
+
+      <QueueDashboard />
 
       <Card>
         <CardHeader>

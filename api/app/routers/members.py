@@ -1,12 +1,27 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.deps import get_org_db, require_role
+from app.auth.deps import get_membership, get_org_db, require_role
+from app.models.membership import Membership
 from app.models.user import User
 from app.schemas.membership import MemberOut, MemberUpdate
 from app.services.membership_service import list_members, update_member
 
 router = APIRouter(prefix="/orgs/current/members", tags=["members"])
+
+
+@router.get("/me", response_model=MemberOut)
+async def get_my_membership(
+    membership: Membership = Depends(get_membership), db: AsyncSession = Depends(get_org_db)
+) -> MemberOut:
+    """Lets the frontend know the current user's own role for this org (e.g. to show/hide
+    the supervisor-only "Team queue" tab, specs/07-ui-spec.md screen 2) without decoding
+    the JWT client-side."""
+    user = await db.get(User, membership.user_id)
+    return MemberOut(
+        id=membership.id, user_id=membership.user_id, email=user.email if user else "",
+        name=user.name if user else "", role=membership.role, status=membership.status,
+    )
 
 
 @router.get("", response_model=list[MemberOut])

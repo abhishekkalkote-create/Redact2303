@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Query, Response
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.deps import get_membership, get_org_db
@@ -10,6 +11,15 @@ from app.services.export_service import create_export, verify_certificate_by_id
 from app.storage import get_store
 
 router = APIRouter(tags=["exports"])
+
+
+@router.get("/exports", response_model=list[ExportOut])
+async def list_exports(
+    db: AsyncSession = Depends(get_org_db), limit: int = Query(default=20, le=100)
+) -> list[ExportArtifact]:
+    """specs/07-ui-spec.md screen 2 "Recent exports" tab."""
+    result = await db.execute(select(ExportArtifact).order_by(ExportArtifact.created_at.desc()).limit(limit))
+    return list(result.scalars().all())
 
 _CONTENT_TYPES = {
     "clean_pdf": "application/pdf",

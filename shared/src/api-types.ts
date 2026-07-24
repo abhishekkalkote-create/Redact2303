@@ -176,6 +176,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/dashboard/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Dashboard Summary */
+        get: operations["get_dashboard_summary_v1_dashboard_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/dashboard/team-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Dashboard Team Queue */
+        get: operations["get_dashboard_team_queue_v1_dashboard_team_queue_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents": {
         parameters: {
             query?: never;
@@ -431,6 +465,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Exports
+         * @description specs/07-ui-spec.md screen 2 "Recent exports" tab.
+         */
+        get: operations["list_exports_v1_exports_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/exports/{export_id}/download": {
         parameters: {
             query?: never;
@@ -531,6 +585,28 @@ export interface paths {
         };
         /** List Org Members */
         get: operations["list_org_members_v1_orgs_current_members_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/orgs/current/members/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get My Membership
+         * @description Lets the frontend know the current user's own role for this org (e.g. to show/hide
+         *     the supervisor-only "Team queue" tab, specs/07-ui-spec.md screen 2) without decoding
+         *     the JWT client-side.
+         */
+        get: operations["get_my_membership_v1_orgs_current_members_me_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -977,6 +1053,25 @@ export interface components {
             /** Width */
             width: number;
         };
+        /**
+         * QueueSummary
+         * @description specs/07-ui-spec.md screen 2 KPI row: "New / Processing / Ready for review /
+         *     In review / Awaiting approval / Completed this month."
+         */
+        QueueSummary: {
+            /** Awaiting Approval */
+            awaiting_approval: number;
+            /** Completed */
+            completed: number;
+            /** In Review */
+            in_review: number;
+            /** New */
+            new: number;
+            /** Processing */
+            processing: number;
+            /** Ready For Review */
+            ready_for_review: number;
+        };
         /** RequestCreate */
         RequestCreate: {
             /** Assignee Id */
@@ -1023,6 +1118,25 @@ export interface components {
         ReviewApprovalRequest: {
             /** Note */
             note?: string | null;
+        };
+        /**
+         * ReviewerWorkload
+         * @description specs/07-ui-spec.md screen 2: "Team queue (supervisor: per-reviewer workload,
+         *     aging, due dates)."
+         */
+        ReviewerWorkload: {
+            /** Assigned Count */
+            assigned_count: number;
+            /** Due Soon Count */
+            due_soon_count: number;
+            /** Email */
+            email: string;
+            /** Name */
+            name: string;
+            /** Overdue Count */
+            overdue_count: number;
+            /** User Id */
+            user_id: string;
         };
         /** SearchRedactRequest */
         SearchRedactRequest: {
@@ -1384,6 +1498,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CertificateVerifyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_dashboard_summary_v1_dashboard_summary_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_dashboard_team_queue_v1_dashboard_team_queue_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewerWorkload"][];
                 };
             };
             /** @description Validation Error */
@@ -1943,6 +2121,40 @@ export interface operations {
             };
         };
     };
+    list_exports_v1_exports_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     download_export_v1_exports__export_id__download_get: {
         parameters: {
             query?: never;
@@ -2170,6 +2382,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_membership_v1_orgs_current_members_me_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberOut"];
                 };
             };
             /** @description Validation Error */

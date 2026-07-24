@@ -1129,6 +1129,45 @@
         "title": "PageOut",
         "type": "object"
       },
+      "QueueSummary": {
+        "description": "specs/07-ui-spec.md screen 2 KPI row: \"New / Processing / Ready for review /\nIn review / Awaiting approval / Completed this month.\" ",
+        "properties": {
+          "awaiting_approval": {
+            "title": "Awaiting Approval",
+            "type": "integer"
+          },
+          "completed": {
+            "title": "Completed",
+            "type": "integer"
+          },
+          "in_review": {
+            "title": "In Review",
+            "type": "integer"
+          },
+          "new": {
+            "title": "New",
+            "type": "integer"
+          },
+          "processing": {
+            "title": "Processing",
+            "type": "integer"
+          },
+          "ready_for_review": {
+            "title": "Ready For Review",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "new",
+          "processing",
+          "ready_for_review",
+          "in_review",
+          "awaiting_approval",
+          "completed"
+        ],
+        "title": "QueueSummary",
+        "type": "object"
+      },
       "RequestCreate": {
         "properties": {
           "assignee_id": {
@@ -1305,6 +1344,45 @@
           }
         },
         "title": "ReviewApprovalRequest",
+        "type": "object"
+      },
+      "ReviewerWorkload": {
+        "description": "specs/07-ui-spec.md screen 2: \"Team queue (supervisor: per-reviewer workload,\naging, due dates).\" ",
+        "properties": {
+          "assigned_count": {
+            "title": "Assigned Count",
+            "type": "integer"
+          },
+          "due_soon_count": {
+            "title": "Due Soon Count",
+            "type": "integer"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "overdue_count": {
+            "title": "Overdue Count",
+            "type": "integer"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "name",
+          "email",
+          "assigned_count",
+          "overdue_count",
+          "due_soon_count"
+        ],
+        "title": "ReviewerWorkload",
         "type": "object"
       },
       "SearchRedactRequest": {
@@ -2089,6 +2167,140 @@
         "summary": "Verify Certificate Route",
         "tags": [
           "exports"
+        ]
+      }
+    },
+    "/v1/dashboard/summary": {
+      "get": {
+        "operationId": "get_dashboard_summary_v1_dashboard_summary_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Dashboard Summary",
+        "tags": [
+          "dashboard"
+        ]
+      }
+    },
+    "/v1/dashboard/team-queue": {
+      "get": {
+        "operationId": "get_dashboard_team_queue_v1_dashboard_team_queue_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReviewerWorkload"
+                  },
+                  "title": "Response Get Dashboard Team Queue V1 Dashboard Team Queue Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Dashboard Team Queue",
+        "tags": [
+          "dashboard"
         ]
       }
     },
@@ -3366,6 +3578,87 @@
         ]
       }
     },
+    "/v1/exports": {
+      "get": {
+        "description": "specs/07-ui-spec.md screen 2 \"Recent exports\" tab.",
+        "operationId": "list_exports_v1_exports_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ExportOut"
+                  },
+                  "title": "Response List Exports V1 Exports Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Exports",
+        "tags": [
+          "exports"
+        ]
+      }
+    },
     "/v1/exports/{export_id}/download": {
       "get": {
         "description": "specs/04-api-spec.md: \"signed URL\" in the real S3-backed design; served directly\nhere for the same reason as page previews (app/storage/local.py) \u2014 still auth-gated\nand org-scoped via get_org_db, not public like certificate verification.",
@@ -3835,6 +4128,72 @@
           }
         },
         "summary": "List Org Members",
+        "tags": [
+          "members"
+        ]
+      }
+    },
+    "/v1/orgs/current/members/me": {
+      "get": {
+        "description": "Lets the frontend know the current user's own role for this org (e.g. to show/hide\nthe supervisor-only \"Team queue\" tab, specs/07-ui-spec.md screen 2) without decoding\nthe JWT client-side.",
+        "operationId": "get_my_membership_v1_orgs_current_members_me_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get My Membership",
         "tags": [
           "members"
         ]
