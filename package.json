@@ -1,0 +1,11 @@
+{
+  "name": "redactproof",
+  "private": true,
+  "workspaces": [
+    "web",
+    "shared"
+  ],
+  "overrides": {
+    "sharp": "^0.35.3"
+  }
+}

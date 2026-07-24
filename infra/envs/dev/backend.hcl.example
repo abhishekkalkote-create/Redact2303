@@ -1,0 +1,5 @@
+bucket         = "redactproof-tfstate-dev"
+key            = "dev/terraform.tfstate"
+region         = "us-east-1"
+dynamodb_table = "redactproof-tflock-dev"
+encrypt        = true

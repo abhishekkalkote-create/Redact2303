@@ -1,0 +1,14 @@
+{
+  "name": "@redactproof/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/api-types.ts",
+  "types": "src/api-types.ts",
+  "scripts": {
+    "generate": "openapi-typescript openapi.json -o src/api-types.ts"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7"
+  }
+}

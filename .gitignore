@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+.next/
+out/
+.turbo/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+*.hcl
+!*.hcl.example
+# Commit lock files for reproducible provider versions across local/CI (current Terraform
+# guidance, not the older ignore-it advice) — *.hcl above would otherwise catch these too.
+!.terraform.lock.hcl
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Logs
+*.log
