@@ -122,7 +122,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Documents */
+        /**
+         * List Documents
+         * @description specs/01-product-spec.md US-16: "queue dashboards" — `assignee=me` is the "my
+         *     queue" filter; a supervisor omits it (or passes another user's id) for "team queue".
+         */
         get: operations["list_documents_v1_documents_get"];
         put?: never;
         /** Upload Document */
@@ -147,7 +151,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Patch Document
+         * @description specs/04-api-spec.md PATCH /documents/{id} — assign, due_date, request_id.
+         */
+        patch: operations["patch_document_v1_documents__doc_id__patch"];
         trace?: never;
     };
     "/v1/documents/{doc_id}/candidates": {
@@ -178,6 +186,27 @@ export interface paths {
         put?: never;
         /** Bulk Update Route */
         post: operations["bulk_update_route_v1_documents__doc_id__candidates_bulk_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{doc_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Document Timeline
+         * @description specs/01-product-spec.md US-20 / specs/07-ui-spec.md screen 7: document timeline
+         *     audit view — every lifecycle event for this one document, oldest first.
+         */
+        get: operations["get_document_timeline_v1_documents__doc_id__events_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -257,6 +286,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{doc_id}/review:approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve Document Route
+         * @description specs/04-api-spec.md: supervisor dual-approval — role-enforced here, not just
+         *     reachable-but-ignored by reviewers (specs/10-build-plan.md Phase 3 AC).
+         */
+        post: operations["approve_document_route_v1_documents__doc_id__review_approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents/{doc_id}/review:complete": {
         parameters: {
             query?: never;
@@ -268,6 +318,23 @@ export interface paths {
         put?: never;
         /** Complete Review Route */
         post: operations["complete_review_route_v1_documents__doc_id__review_complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{doc_id}/review:return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Return Document Route */
+        post: operations["return_document_route_v1_documents__doc_id__review_return_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -437,10 +504,61 @@ export interface paths {
         patch: operations["patch_member_v1_orgs_current_members__member_id__patch"];
         trace?: never;
     };
+    "/v1/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Requests Route */
+        get: operations["list_requests_route_v1_requests_get"];
+        put?: never;
+        /** Create Request Route */
+        post: operations["create_request_route_v1_requests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/requests/{request_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Request Route */
+        get: operations["get_request_route_v1_requests__request_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Request Route */
+        patch: operations["patch_request_route_v1_requests__request_id__patch"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AuditEventOut */
+        AuditEventOut: {
+            /** Action */
+            action: string;
+            /** Actor Id */
+            actor_id?: string | null;
+            /** Actor Type */
+            actor_type: string;
+            /** Id */
+            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: unknown;
+            };
+        };
         /** BBox */
         BBox: {
             /** H */
@@ -456,6 +574,8 @@ export interface components {
         Body_upload_document_v1_documents_post: {
             /** File */
             file: string;
+            /** Request Id */
+            request_id?: string | null;
         };
         /** BulkUpdateRequest */
         BulkUpdateRequest: {
@@ -549,13 +669,26 @@ export interface components {
              */
             name: string;
         };
+        /** DocumentAssignPatch */
+        DocumentAssignPatch: {
+            /** Assignee Id */
+            assignee_id?: string | null;
+            /** Due Date */
+            due_date?: string | null;
+            /** Request Id */
+            request_id?: string | null;
+        };
         /** DocumentOut */
         DocumentOut: {
+            /** Assignee Id */
+            assignee_id?: string | null;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
+            /** Due Date */
+            due_date?: string | null;
             /** Error */
             error?: {
                 [key: string]: unknown;
@@ -570,6 +703,8 @@ export interface components {
             ocr_used: boolean;
             /** Page Count */
             page_count?: number | null;
+            /** Request Id */
+            request_id?: string | null;
             /** Source */
             source: string;
             /** Status */
@@ -775,6 +910,53 @@ export interface components {
             rotation: number;
             /** Width */
             width: number;
+        };
+        /** RequestCreate */
+        RequestCreate: {
+            /** Assignee Id */
+            assignee_id?: string | null;
+            /** Due Date */
+            due_date?: string | null;
+            /** Reference No */
+            reference_no?: string | null;
+            /** Title */
+            title: string;
+        };
+        /** RequestOut */
+        RequestOut: {
+            /** Assignee Id */
+            assignee_id?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Due Date */
+            due_date?: string | null;
+            /** Id */
+            id: string;
+            /** Reference No */
+            reference_no?: string | null;
+            /** Status */
+            status: string;
+            /** Title */
+            title: string;
+        };
+        /** RequestPatch */
+        RequestPatch: {
+            /** Assignee Id */
+            assignee_id?: string | null;
+            /** Due Date */
+            due_date?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Title */
+            title?: string | null;
+        };
+        /** ReviewApprovalRequest */
+        ReviewApprovalRequest: {
+            /** Note */
+            note?: string | null;
         };
         /** SearchRedactRequest */
         SearchRedactRequest: {
@@ -1035,7 +1217,12 @@ export interface operations {
     };
     list_documents_v1_documents_get: {
         parameters: {
-            query?: never;
+            query?: {
+                status?: string | null;
+                request_id?: string | null;
+                /** @description "me" or a user id */
+                assignee?: string | null;
+            };
             header?: {
                 authorization?: string | null;
                 "X-Org-Id"?: string | null;
@@ -1135,6 +1322,44 @@ export interface operations {
             };
         };
     };
+    patch_document_v1_documents__doc_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                doc_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentAssignPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_candidate_v1_documents__doc_id__candidates_post: {
         parameters: {
             query?: never;
@@ -1198,6 +1423,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BulkUpdateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_document_timeline_v1_documents__doc_id__events_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                doc_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditEventOut"][];
                 };
             };
             /** @description Validation Error */
@@ -1352,6 +1611,44 @@ export interface operations {
             };
         };
     };
+    approve_document_route_v1_documents__doc_id__review_approve_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                doc_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewApprovalRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     complete_review_route_v1_documents__doc_id__review_complete_post: {
         parameters: {
             query?: never;
@@ -1365,6 +1662,44 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    return_document_route_v1_documents__doc_id__review_return_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                doc_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewApprovalRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -1721,6 +2056,146 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_requests_route_v1_requests_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_request_route_v1_requests_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_request_route_v1_requests__request_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_request_route_v1_requests__request_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestOut"];
                 };
             };
             /** @description Validation Error */

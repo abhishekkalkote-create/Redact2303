@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.deps import get_membership, get_org_db
+from app.auth.deps import get_membership, get_org_db, require_role
 from app.crypto.envelope import get_cipher
 from app.models.membership import Membership
 from app.models.redaction_candidate import RedactionCandidate
@@ -13,14 +13,17 @@ from app.schemas.document import (
     CandidateOut,
     CandidatePatch,
     DocumentOut,
+    ReviewApprovalRequest,
     SearchRedactRequest,
     SearchRedactResponse,
 )
 from app.services.review_service import (
+    approve_document,
     bulk_update_candidates,
     complete_review,
     create_manual_candidate,
     patch_candidate,
+    return_document,
 )
 from app.services.search_service import search_and_redact
 
@@ -79,6 +82,28 @@ async def complete_review_route(
     db: AsyncSession = Depends(get_org_db),
 ):
     return await complete_review(db, membership.org_id, doc_id, membership.user_id)
+
+
+@router.post("/documents/{doc_id}/review:approve", response_model=DocumentOut)
+async def approve_document_route(
+    doc_id: str,
+    payload: ReviewApprovalRequest,
+    membership: Membership = Depends(require_role("agency_admin", "supervisor")),
+    db: AsyncSession = Depends(get_org_db),
+):
+    """specs/04-api-spec.md: supervisor dual-approval — role-enforced here, not just
+    reachable-but-ignored by reviewers (specs/10-build-plan.md Phase 3 AC)."""
+    return await approve_document(db, membership.org_id, doc_id, membership.user_id, payload.note)
+
+
+@router.post("/documents/{doc_id}/review:return", response_model=DocumentOut)
+async def return_document_route(
+    doc_id: str,
+    payload: ReviewApprovalRequest,
+    membership: Membership = Depends(require_role("agency_admin", "supervisor")),
+    db: AsyncSession = Depends(get_org_db),
+):
+    return await return_document(db, membership.org_id, doc_id, membership.user_id, payload.note)
 
 
 @router.post("/documents/{doc_id}/search-redact", response_model=SearchRedactResponse)

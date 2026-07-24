@@ -30,9 +30,16 @@ ACTIONS = frozenset(
         "candidate.rejected",
         "candidate.modified",
         "review.completed",
+        "review.approved",
+        "review.returned",
         "export.created",
         "export.integrity_failed",
         "export.downloaded",
+        "request.created",
+        "request.updated",
+        "document.assigned",
+        "webhook.delivered",
+        "webhook.delivery_failed",
     }
 )
 

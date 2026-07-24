@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Response, UploadFile
+from fastapi import APIRouter, Depends, Form, Query, Response, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -6,6 +6,7 @@ from app.auth.deps import get_membership, get_org_db
 from app.core.errors import NotFoundError
 from app.core.ids import new_id
 from app.crypto.envelope import get_cipher
+from app.models.audit_event import AuditEvent
 from app.models.document import Document, DocumentPage
 from app.models.exemption_code import ExemptionCode
 from app.models.manifest import Manifest
@@ -13,7 +14,15 @@ from app.models.membership import Membership
 from app.models.redaction_candidate import RedactionCandidate
 from app.pipeline.intake import content_sha256, validate_and_scan
 from app.pipeline.run import process_document
-from app.schemas.document import BBox, CandidateOut, DocumentOut, ManifestOut, PageOut
+from app.schemas.document import (
+    AuditEventOut,
+    BBox,
+    CandidateOut,
+    DocumentAssignPatch,
+    DocumentOut,
+    ManifestOut,
+    PageOut,
+)
 from app.services.audit_service import write_audit_event
 from app.storage import get_store
 
@@ -21,14 +30,30 @@ router = APIRouter(tags=["documents"])
 
 
 @router.get("/documents", response_model=list[DocumentOut])
-async def list_documents(db: AsyncSession = Depends(get_org_db)) -> list[Document]:
-    result = await db.execute(select(Document).order_by(Document.created_at.desc()))
+async def list_documents(
+    membership: Membership = Depends(get_membership),
+    db: AsyncSession = Depends(get_org_db),
+    status: str | None = Query(default=None),
+    request_id: str | None = Query(default=None),
+    assignee: str | None = Query(default=None, description='"me" or a user id'),
+) -> list[Document]:
+    """specs/01-product-spec.md US-16: "queue dashboards" — `assignee=me` is the "my
+    queue" filter; a supervisor omits it (or passes another user's id) for "team queue"."""
+    query = select(Document).order_by(Document.created_at.desc())
+    if status:
+        query = query.where(Document.status == status)
+    if request_id:
+        query = query.where(Document.request_id == request_id)
+    if assignee:
+        query = query.where(Document.assignee_id == (membership.user_id if assignee == "me" else assignee))
+    result = await db.execute(query)
     return list(result.scalars().all())
 
 
 @router.post("/documents", response_model=DocumentOut, status_code=201)
 async def upload_document(
     file: UploadFile,
+    request_id: str | None = Form(default=None),
     membership: Membership = Depends(get_membership),
     db: AsyncSession = Depends(get_org_db),
 ) -> Document:
@@ -42,7 +67,7 @@ async def upload_document(
 
     document = Document(
         id=doc_id, org_id=membership.org_id, filename=file.filename or "upload.pdf",
-        mime_type=mime_type, source="upload", status="uploaded",
+        mime_type=mime_type, source="upload", status="uploaded", request_id=request_id,
         uploaded_by=membership.user_id, s3_key_original=original_key,
         content_sha256=content_sha256(data),
     )
@@ -80,6 +105,31 @@ async def get_document(
     document = await db.get(Document, doc_id)
     if document is None:
         raise NotFoundError("Document not found")
+    return document
+
+
+@router.patch("/documents/{doc_id}", response_model=DocumentOut)
+async def patch_document(
+    doc_id: str,
+    payload: DocumentAssignPatch,
+    membership: Membership = Depends(get_membership),
+    db: AsyncSession = Depends(get_org_db),
+) -> Document:
+    """specs/04-api-spec.md PATCH /documents/{id} — assign, due_date, request_id."""
+    document = await db.get(Document, doc_id)
+    if document is None:
+        raise NotFoundError("Document not found")
+    updates = payload.model_dump(exclude_none=True)
+    for key, value in updates.items():
+        setattr(document, key, value)
+    if updates:
+        await write_audit_event(
+            db, org_id=membership.org_id, actor_type="user", actor_id=membership.user_id,
+            action="document.assigned", object_type="document", object_id=doc_id,
+            metadata={"fields": list(updates)},
+        )
+    await db.flush()
+    await db.refresh(document)
     return document
 
 
@@ -135,3 +185,13 @@ async def get_page_preview(doc_id: str, page_no: int, db: AsyncSession = Depends
 
     png_bytes = get_store().get(page.org_id, page.s3_key_preview)
     return Response(content=png_bytes, media_type="image/png")
+
+
+@router.get("/documents/{doc_id}/events", response_model=list[AuditEventOut])
+async def get_document_timeline(doc_id: str, db: AsyncSession = Depends(get_org_db)) -> list[AuditEvent]:
+    """specs/01-product-spec.md US-20 / specs/07-ui-spec.md screen 7: document timeline
+    audit view — every lifecycle event for this one document, oldest first."""
+    result = await db.execute(
+        select(AuditEvent).where(AuditEvent.object_type == "document", AuditEvent.object_id == doc_id).order_by(AuditEvent.id)
+    )
+    return list(result.scalars().all())

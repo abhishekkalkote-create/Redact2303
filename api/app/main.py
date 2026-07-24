@@ -18,6 +18,7 @@ from app.routers import (
     invites,
     members,
     orgs,
+    requests,
     review,
 )
 
@@ -54,3 +55,4 @@ app.include_router(documents.router, prefix=settings.api_v1_prefix)
 app.include_router(review.router, prefix=settings.api_v1_prefix)
 app.include_router(exports.router, prefix=settings.api_v1_prefix)
 app.include_router(exemption_codes.router, prefix=settings.api_v1_prefix)
+app.include_router(requests.router, prefix=settings.api_v1_prefix)

@@ -10,6 +10,7 @@ from app.core.ids import new_id
 from app.crypto.envelope import get_cipher
 from app.models.document import Document
 from app.models.manifest import Manifest
+from app.models.organization import Organization
 from app.models.redaction_candidate import RedactionCandidate
 from app.models.review_action import ReviewAction
 from app.services.audit_service import write_audit_event
@@ -75,7 +76,10 @@ async def patch_candidate(
     await write_audit_event(
         session, org_id=org_id, actor_type="user", actor_id=user_id,
         action=f"candidate.{'approved' if state == 'approved' else 'rejected' if state == 'rejected' else 'modified'}",
-        object_type="redaction_candidate", object_id=candidate.id, metadata={},
+        # object_type/object_id = document, not the candidate, so GET /documents/{id}/events
+        # (the document timeline view) can find every candidate-level event for a doc with
+        # a single query — the candidate id still travels in metadata.
+        object_type="document", object_id=candidate.doc_id, metadata={"candidate_id": candidate.id},
     )
     await session.flush()
     await session.refresh(candidate)
@@ -112,7 +116,8 @@ async def create_manual_candidate(
     manifest.version += 1
     await write_audit_event(
         session, org_id=org_id, actor_type="user", actor_id=user_id,
-        action="candidate.created", object_type="redaction_candidate", object_id=candidate.id, metadata={},
+        action="candidate.created", object_type="document", object_id=doc_id,
+        metadata={"candidate_id": candidate.id},
     )
     await session.flush()
     await session.refresh(candidate)
@@ -188,7 +193,15 @@ async def bulk_update_candidates(
 async def complete_review(session: AsyncSession, org_id: str, doc_id: str, user_id: str) -> Document:
     """specs/04-api-spec.md POST /documents/{id}/review:complete — validates the
     completeness checklist (specs/03-data-model.md: zero unresolved low-confidence
-    `suggested` candidates) before advancing document status."""
+    `suggested` candidates) before advancing document status.
+
+    specs/03-data-model.md state machine: if the org has `dual_approval_required`, this
+    lands on `awaiting_approval` (a supervisor/admin must call review:approve before
+    export is possible) instead of going straight to `review_complete`. export_service.py
+    only accepts documents in `review_complete`, so `awaiting_approval` is a hard,
+    API-enforced block on export, not just a UI hint — see specs/10-build-plan.md Phase 3
+    AC: "dual-approval org cannot export without supervisor action (API-enforced)".
+    """
     document = await session.get(Document, doc_id)
     if document is None:
         raise NotFoundError("Document not found")
@@ -207,7 +220,11 @@ async def complete_review(session: AsyncSession, org_id: str, doc_id: str, user_
             f"{len(unresolved)} low-confidence candidate(s) still unresolved — review them before completing.",
         )
 
-    document.status = "review_complete"
+    org = await session.get(Organization, org_id)
+    assert org is not None
+    dual_approval = bool(org.settings.get("dual_approval_required"))
+
+    document.status = "awaiting_approval" if dual_approval else "review_complete"
     session.add(
         ReviewAction(
             id=new_id("ract"), org_id=org_id, doc_id=doc_id, candidate_id=None,
@@ -216,7 +233,58 @@ async def complete_review(session: AsyncSession, org_id: str, doc_id: str, user_
     )
     await write_audit_event(
         session, org_id=org_id, actor_type="user", actor_id=user_id,
-        action="review.completed", object_type="document", object_id=doc_id, metadata={},
+        action="review.completed", object_type="document", object_id=doc_id,
+        metadata={"dual_approval_required": dual_approval},
+    )
+    await session.flush()
+    await session.refresh(document)
+    return document
+
+
+async def approve_document(session: AsyncSession, org_id: str, doc_id: str, user_id: str, note: str | None) -> Document:
+    """specs/04-api-spec.md POST /documents/{id}/review:approve — supervisor/admin
+    sign-off for dual-approval orgs. Only valid from `awaiting_approval`."""
+    document = await session.get(Document, doc_id)
+    if document is None:
+        raise NotFoundError("Document not found")
+    if document.status != "awaiting_approval":
+        raise ApiError(422, "Unprocessable Entity", f"Document is not awaiting approval (status: {document.status})")
+
+    document.status = "review_complete"
+    session.add(
+        ReviewAction(
+            id=new_id("ract"), org_id=org_id, doc_id=doc_id, candidate_id=None,
+            user_id=user_id, action="approve_doc", payload=None, note=note,
+        )
+    )
+    await write_audit_event(
+        session, org_id=org_id, actor_type="user", actor_id=user_id,
+        action="review.approved", object_type="document", object_id=doc_id, metadata={},
+    )
+    await session.flush()
+    await session.refresh(document)
+    return document
+
+
+async def return_document(session: AsyncSession, org_id: str, doc_id: str, user_id: str, note: str | None) -> Document:
+    """specs/04-api-spec.md POST /documents/{id}/review:return — supervisor sends a
+    dual-approval document back for more work instead of approving it."""
+    document = await session.get(Document, doc_id)
+    if document is None:
+        raise NotFoundError("Document not found")
+    if document.status != "awaiting_approval":
+        raise ApiError(422, "Unprocessable Entity", f"Document is not awaiting approval (status: {document.status})")
+
+    document.status = "in_review"
+    session.add(
+        ReviewAction(
+            id=new_id("ract"), org_id=org_id, doc_id=doc_id, candidate_id=None,
+            user_id=user_id, action="return_doc", payload=None, note=note,
+        )
+    )
+    await write_audit_event(
+        session, org_id=org_id, actor_type="user", actor_id=user_id,
+        action="review.returned", object_type="document", object_id=doc_id, metadata={"note": note},
     )
     await session.flush()
     await session.refresh(document)

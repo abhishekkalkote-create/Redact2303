@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class DocumentOut(BaseModel):
@@ -14,8 +14,17 @@ class DocumentOut(BaseModel):
     uploaded_by: str
     error: dict | None = None
     created_at: datetime
+    request_id: str | None = None
+    assignee_id: str | None = None
+    due_date: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+
+class DocumentAssignPatch(BaseModel):
+    assignee_id: str | None = None
+    due_date: datetime | None = None
+    request_id: str | None = None
 
 
 class BBox(BaseModel):
@@ -106,5 +115,22 @@ class ExemptionCodeOut(BaseModel):
     statute_citation: str | None = None
     description: str | None = None
     status: str
+
+    model_config = {"from_attributes": True}
+
+
+class ReviewApprovalRequest(BaseModel):
+    note: str | None = None
+
+
+class AuditEventOut(BaseModel):
+    id: str
+    actor_type: str
+    actor_id: str | None = None
+    action: str
+    # The ORM attribute is `metadata_` (SQLAlchemy reserves `Base.metadata`) — read by that
+    # name via from_attributes, but serialize as "metadata" in the API response, which is
+    # what it's actually called everywhere else (specs/03-data-model.md, other schemas).
+    metadata_: dict = Field(serialization_alias="metadata")
 
     model_config = {"from_attributes": True}
