@@ -23,7 +23,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import ApiError, NotFoundError
 from app.core.ids import new_id
+from app.llm.provider import get_provider
+from app.models.exemption_code import ExemptionCode
 from app.models.rule import Rule, RulePack, RuleSetVersion
+from app.pipeline.nl_rule_edit import PROMPT_VERSION as NL_EDIT_PROMPT_VERSION
+from app.pipeline.nl_rule_edit import ProposedRuleChange, run_nl_edit
 from app.schemas.rule import RuleCreate, RulePackCreate, RulePatch
 from app.services.audit_service import write_audit_event
 
@@ -258,3 +262,34 @@ async def publish_version(session: AsyncSession, org_id: str, user_id: str, vers
     await session.flush()
     await session.refresh(version)
     return version
+
+
+async def _allowed_exemption_codes(session: AsyncSession, org_id: str) -> set[str]:
+    result = await session.execute(
+        select(ExemptionCode.code).where(ExemptionCode.org_id == org_id, ExemptionCode.status == "active")
+    )
+    return {row[0] for row in result.all()}
+
+
+async def nl_edit_version(
+    session: AsyncSession, org_id: str, user_id: str, version_id: str, instruction: str
+) -> tuple[list[ProposedRuleChange], str]:
+    """specs/06: NL instruction -> LLM-proposed rule diff. Never persists anything —
+    proposals are ephemeral; a human confirms via the existing rule CRUD endpoints."""
+    version, rules = await get_version_with_rules(session, version_id)
+    allowed_codes = await _allowed_exemption_codes(session, org_id)
+
+    provider = get_provider()
+    proposals, input_tokens, output_tokens = run_nl_edit(provider, instruction, rules, allowed_codes)
+
+    await write_audit_event(
+        session, org_id=org_id, actor_type="user", actor_id=user_id,
+        action="rule_set_version.nl_edit_proposed", object_type="rule_set_version", object_id=version.id,
+        metadata={
+            "instruction": instruction, "prompt_version": NL_EDIT_PROMPT_VERSION,
+            "proposals": len(proposals), "valid_proposals": sum(1 for p in proposals if p.is_valid),
+            "input_tokens": input_tokens, "output_tokens": output_tokens,
+        },
+    )
+    await session.flush()
+    return proposals, NL_EDIT_PROMPT_VERSION

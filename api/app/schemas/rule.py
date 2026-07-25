@@ -89,3 +89,33 @@ class RulePatch(BaseModel):
 
 class PublishVersionRequest(BaseModel):
     changelog: str | None = None
+
+
+class NlEditRequest(BaseModel):
+    instruction: str
+
+
+class ProposedRuleChangeOut(BaseModel):
+    action: str
+    rule_key: str
+    name: str | None = None
+    trigger_type: str | None = None
+    config: dict | None = None
+    exemption_code: str | None = None
+    exclusions: list = []
+    rationale: str
+    is_valid: bool
+    invalid_reason: str | None = None
+
+
+class NlEditResponse(BaseModel):
+    """specs/06-exemption-taxonomy.md: "shown as a reviewable draft change; nothing
+    applies without human confirm + publish." `prompt_version`/`instruction` are echoed
+    back so the client can pass them as `source_ref` when it confirms an accepted
+    proposal via the existing POST rule-set-versions/{id}/rules or PATCH /rules/{id}
+    endpoints — "NL input stored with the rule as provenance," without a separate
+    apply/confirm endpoint."""
+
+    prompt_version: str
+    instruction: str
+    proposals: list[ProposedRuleChangeOut]

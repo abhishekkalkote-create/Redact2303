@@ -5,6 +5,9 @@ from app.auth.deps import get_org_db, require_role
 from app.models.membership import Membership
 from app.models.rule import Rule, RulePack, RuleSetVersion
 from app.schemas.rule import (
+    NlEditRequest,
+    NlEditResponse,
+    ProposedRuleChangeOut,
     PublishVersionRequest,
     RuleCreate,
     RuleOut,
@@ -21,6 +24,7 @@ from app.services.rule_service import (
     get_version_with_rules,
     list_rule_packs,
     list_versions_for_pack,
+    nl_edit_version,
     patch_rule,
     publish_version,
 )
@@ -100,6 +104,30 @@ async def delete_rule_route(
     db: AsyncSession = Depends(get_org_db),
 ) -> None:
     await delete_rule(db, membership.org_id, membership.user_id, rule_id)
+
+
+@router.post("/rule-set-versions/{version_id}/nl-edit", response_model=NlEditResponse)
+async def nl_edit_rule_set_version_route(
+    version_id: str,
+    payload: NlEditRequest,
+    membership: Membership = Depends(require_role("agency_admin")),
+    db: AsyncSession = Depends(get_org_db),
+) -> NlEditResponse:
+    """specs/04-api-spec.md POST /rule-set-versions/{id}/nl-edit — proposals are
+    ephemeral (never persisted); confirm an accepted one via the existing
+    POST .../rules or PATCH /rules/{id} endpoints."""
+    proposals, prompt_version = await nl_edit_version(db, membership.org_id, membership.user_id, version_id, payload.instruction)
+    return NlEditResponse(
+        prompt_version=prompt_version, instruction=payload.instruction,
+        proposals=[
+            ProposedRuleChangeOut(
+                action=p.action, rule_key=p.rule_key, name=p.name, trigger_type=p.trigger_type,
+                config=p.config, exemption_code=p.exemption_code, exclusions=p.exclusions,
+                rationale=p.rationale, is_valid=p.is_valid, invalid_reason=p.invalid_reason,
+            )
+            for p in proposals
+        ],
+    )
 
 
 @router.post("/rule-set-versions/{version_id}/publish", response_model=RuleSetVersionOut)

@@ -936,6 +936,46 @@
         "title": "MemberUpdate",
         "type": "object"
       },
+      "NlEditRequest": {
+        "properties": {
+          "instruction": {
+            "title": "Instruction",
+            "type": "string"
+          }
+        },
+        "required": [
+          "instruction"
+        ],
+        "title": "NlEditRequest",
+        "type": "object"
+      },
+      "NlEditResponse": {
+        "description": "specs/06-exemption-taxonomy.md: \"shown as a reviewable draft change; nothing\napplies without human confirm + publish.\" `prompt_version`/`instruction` are echoed\nback so the client can pass them as `source_ref` when it confirms an accepted\nproposal via the existing POST rule-set-versions/{id}/rules or PATCH /rules/{id}\nendpoints \u2014 \"NL input stored with the rule as provenance,\" without a separate\napply/confirm endpoint.",
+        "properties": {
+          "instruction": {
+            "title": "Instruction",
+            "type": "string"
+          },
+          "prompt_version": {
+            "title": "Prompt Version",
+            "type": "string"
+          },
+          "proposals": {
+            "items": {
+              "$ref": "#/components/schemas/ProposedRuleChangeOut"
+            },
+            "title": "Proposals",
+            "type": "array"
+          }
+        },
+        "required": [
+          "prompt_version",
+          "instruction",
+          "proposals"
+        ],
+        "title": "NlEditResponse",
+        "type": "object"
+      },
       "OrgCreate": {
         "properties": {
           "est_monthly_pages": {
@@ -1141,6 +1181,96 @@
           "has_text_layer"
         ],
         "title": "PageOut",
+        "type": "object"
+      },
+      "ProposedRuleChangeOut": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config"
+          },
+          "exclusions": {
+            "default": [],
+            "items": {},
+            "title": "Exclusions",
+            "type": "array"
+          },
+          "exemption_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exemption Code"
+          },
+          "invalid_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invalid Reason"
+          },
+          "is_valid": {
+            "title": "Is Valid",
+            "type": "boolean"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "rationale": {
+            "title": "Rationale",
+            "type": "string"
+          },
+          "rule_key": {
+            "title": "Rule Key",
+            "type": "string"
+          },
+          "trigger_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trigger Type"
+          }
+        },
+        "required": [
+          "action",
+          "rule_key",
+          "rationale",
+          "is_valid"
+        ],
+        "title": "ProposedRuleChangeOut",
         "type": "object"
       },
       "PublishVersionRequest": {
@@ -5901,6 +6031,91 @@
           }
         },
         "summary": "Get Rule Set Version Route",
+        "tags": [
+          "rules"
+        ]
+      }
+    },
+    "/v1/rule-set-versions/{version_id}/nl-edit": {
+      "post": {
+        "description": "specs/04-api-spec.md POST /rule-set-versions/{id}/nl-edit \u2014 proposals are\nephemeral (never persisted); confirm an accepted one via the existing\nPOST .../rules or PATCH /rules/{id} endpoints.",
+        "operationId": "nl_edit_rule_set_version_route_v1_rule_set_versions__version_id__nl_edit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "title": "Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NlEditRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NlEditResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Nl Edit Rule Set Version Route",
         "tags": [
           "rules"
         ]

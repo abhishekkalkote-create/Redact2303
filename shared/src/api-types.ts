@@ -781,6 +781,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/rule-set-versions/{version_id}/nl-edit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Nl Edit Rule Set Version Route
+         * @description specs/04-api-spec.md POST /rule-set-versions/{id}/nl-edit — proposals are
+         *     ephemeral (never persisted); confirm an accepted one via the existing
+         *     POST .../rules or PATCH /rules/{id} endpoints.
+         */
+        post: operations["nl_edit_rule_set_version_route_v1_rule_set_versions__version_id__nl_edit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/rule-set-versions/{version_id}/publish": {
         parameters: {
             query?: never;
@@ -1150,6 +1172,28 @@ export interface components {
             /** Status */
             status?: string | null;
         };
+        /** NlEditRequest */
+        NlEditRequest: {
+            /** Instruction */
+            instruction: string;
+        };
+        /**
+         * NlEditResponse
+         * @description specs/06-exemption-taxonomy.md: "shown as a reviewable draft change; nothing
+         *     applies without human confirm + publish." `prompt_version`/`instruction` are echoed
+         *     back so the client can pass them as `source_ref` when it confirms an accepted
+         *     proposal via the existing POST rule-set-versions/{id}/rules or PATCH /rules/{id}
+         *     endpoints — "NL input stored with the rule as provenance," without a separate
+         *     apply/confirm endpoint.
+         */
+        NlEditResponse: {
+            /** Instruction */
+            instruction: string;
+            /** Prompt Version */
+            prompt_version: string;
+            /** Proposals */
+            proposals: components["schemas"]["ProposedRuleChangeOut"][];
+        };
         /** OrgCreate */
         OrgCreate: {
             /** Est Monthly Pages */
@@ -1225,6 +1269,34 @@ export interface components {
             rotation: number;
             /** Width */
             width: number;
+        };
+        /** ProposedRuleChangeOut */
+        ProposedRuleChangeOut: {
+            /** Action */
+            action: string;
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Exclusions
+             * @default []
+             */
+            exclusions: unknown[];
+            /** Exemption Code */
+            exemption_code?: string | null;
+            /** Invalid Reason */
+            invalid_reason?: string | null;
+            /** Is Valid */
+            is_valid: boolean;
+            /** Name */
+            name?: string | null;
+            /** Rationale */
+            rationale: string;
+            /** Rule Key */
+            rule_key: string;
+            /** Trigger Type */
+            trigger_type?: string | null;
         };
         /** PublishVersionRequest */
         PublishVersionRequest: {
@@ -3279,6 +3351,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RuleSetVersionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    nl_edit_rule_set_version_route_v1_rule_set_versions__version_id__nl_edit_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NlEditRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NlEditResponse"];
                 };
             };
             /** @description Validation Error */
