@@ -724,6 +724,121 @@ export interface paths {
         patch: operations["patch_request_route_v1_requests__request_id__patch"];
         trace?: never;
     };
+    "/v1/rule-packs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Rule Packs Route
+         * @description specs/04-api-spec.md GET /rule-packs — "starter + org packs"; RLS on rule_packs
+         *     already returns exactly that (global rows + this org's own), nothing else to filter.
+         */
+        get: operations["list_rule_packs_route_v1_rule_packs_get"];
+        put?: never;
+        /** Create Rule Pack Route */
+        post: operations["create_rule_pack_route_v1_rule_packs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rule-packs/{rule_pack_id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Rule Pack Versions Route */
+        get: operations["list_rule_pack_versions_route_v1_rule_packs__rule_pack_id__versions_get"];
+        put?: never;
+        /** Create Rule Pack Version Route */
+        post: operations["create_rule_pack_version_route_v1_rule_packs__rule_pack_id__versions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rule-set-versions/{version_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Rule Set Version Route */
+        get: operations["get_rule_set_version_route_v1_rule_set_versions__version_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rule-set-versions/{version_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish Rule Set Version Route */
+        post: operations["publish_rule_set_version_route_v1_rule_set_versions__version_id__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rule-set-versions/{version_id}/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Rule Set Version Rules Route */
+        get: operations["list_rule_set_version_rules_route_v1_rule_set_versions__version_id__rules_get"];
+        put?: never;
+        /**
+         * Create Rule Route
+         * @description specs/04-api-spec.md: "create/edit rules while draft" — if `version_id` refers to
+         *     a published/archived version, this transparently forks a new draft first
+         *     (specs/06: "publish is immutable (edit attempt creates new draft)").
+         */
+        post: operations["create_rule_route_v1_rule_set_versions__version_id__rules_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rules/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Rule Route */
+        delete: operations["delete_rule_route_v1_rules__rule_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Rule Route */
+        patch: operations["patch_rule_route_v1_rules__rule_id__patch"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1111,6 +1226,11 @@ export interface components {
             /** Width */
             width: number;
         };
+        /** PublishVersionRequest */
+        PublishVersionRequest: {
+            /** Changelog */
+            changelog?: string | null;
+        };
         /**
          * QueueSummary
          * @description specs/07-ui-spec.md screen 2 KPI row: "New / Processing / Ready for review /
@@ -1195,6 +1315,162 @@ export interface components {
             overdue_count: number;
             /** User Id */
             user_id: string;
+        };
+        /** RuleCreate */
+        RuleCreate: {
+            /**
+             * Confidence Policy
+             * @default suggest
+             */
+            confidence_policy: string;
+            /** Config */
+            config: {
+                [key: string]: unknown;
+            };
+            /**
+             * Exclusions
+             * @default []
+             */
+            exclusions: unknown[];
+            /** Exemption Code Id */
+            exemption_code_id?: string | null;
+            /** Exemption Library Code */
+            exemption_library_code?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Priority
+             * @default 100
+             */
+            priority: number;
+            /** Rule Key */
+            rule_key: string;
+            /**
+             * Scope
+             * @default org
+             */
+            scope: string;
+            /** Source Ref */
+            source_ref?: string | null;
+            /** Trigger Type */
+            trigger_type: string;
+        };
+        /** RuleOut */
+        RuleOut: {
+            /** Confidence Policy */
+            confidence_policy: string;
+            /** Config */
+            config: {
+                [key: string]: unknown;
+            };
+            /** Exclusions */
+            exclusions: unknown[];
+            /** Exemption Code Id */
+            exemption_code_id?: string | null;
+            /** Exemption Library Code */
+            exemption_library_code?: string | null;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Priority */
+            priority: number;
+            /** Rule Key */
+            rule_key: string;
+            /** Rule Set Version Id */
+            rule_set_version_id: string;
+            /** Scope */
+            scope: string;
+            /** Source Ref */
+            source_ref?: string | null;
+            /** Status */
+            status: string;
+            /** Trigger Type */
+            trigger_type: string;
+        };
+        /** RulePackCreate */
+        RulePackCreate: {
+            /** Category */
+            category: string;
+            /** Clone From Pack Id */
+            clone_from_pack_id?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name: string;
+        };
+        /** RulePackOut */
+        RulePackOut: {
+            /** Category */
+            category: string;
+            /** Cloned From Pack Id */
+            cloned_from_pack_id?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Description */
+            description?: string | null;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Org Id */
+            org_id?: string | null;
+            /** Status */
+            status: string;
+        };
+        /** RulePatch */
+        RulePatch: {
+            /** Confidence Policy */
+            confidence_policy?: string | null;
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            } | null;
+            /** Exclusions */
+            exclusions?: unknown[] | null;
+            /** Exemption Code Id */
+            exemption_code_id?: string | null;
+            /** Exemption Library Code */
+            exemption_library_code?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Priority */
+            priority?: number | null;
+            /** Scope */
+            scope?: string | null;
+            /** Source Ref */
+            source_ref?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Trigger Type */
+            trigger_type?: string | null;
+        };
+        /** RuleSetVersionOut */
+        RuleSetVersionOut: {
+            /** Changelog */
+            changelog?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Org Id */
+            org_id?: string | null;
+            /** Published At */
+            published_at?: string | null;
+            /** Published By */
+            published_by?: string | null;
+            /** Rule Pack Id */
+            rule_pack_id: string;
+            /** Status */
+            status: string;
+            /** Version */
+            version: number;
         };
         /** SearchRedactRequest */
         SearchRedactRequest: {
@@ -2833,6 +3109,356 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_rule_packs_route_v1_rule_packs_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RulePackOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_rule_pack_route_v1_rule_packs_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RulePackCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RulePackOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_rule_pack_versions_route_v1_rule_packs__rule_pack_id__versions_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                rule_pack_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetVersionOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_rule_pack_version_route_v1_rule_packs__rule_pack_id__versions_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                rule_pack_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetVersionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_rule_set_version_route_v1_rule_set_versions__version_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetVersionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_rule_set_version_route_v1_rule_set_versions__version_id__publish_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublishVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetVersionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_rule_set_version_rules_route_v1_rule_set_versions__version_id__rules_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_rule_route_v1_rule_set_versions__version_id__rules_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuleCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_rule_route_v1_rules__rule_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_rule_route_v1_rules__rule_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RulePatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleOut"];
                 };
             };
             /** @description Validation Error */

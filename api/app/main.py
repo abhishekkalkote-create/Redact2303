@@ -22,6 +22,7 @@ from app.routers import (
     orgs,
     requests,
     review,
+    rules,
     webhooks,
 )
 
@@ -62,3 +63,4 @@ app.include_router(requests.router, prefix=settings.api_v1_prefix)
 app.include_router(audit.router, prefix=settings.api_v1_prefix)
 app.include_router(dashboard.router, prefix=settings.api_v1_prefix)
 app.include_router(webhooks.router, prefix=settings.api_v1_prefix)
+app.include_router(rules.router, prefix=settings.api_v1_prefix)

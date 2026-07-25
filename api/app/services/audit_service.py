@@ -43,6 +43,12 @@ ACTIONS = frozenset(
         "document.assigned",
         "webhook.subscription_created",
         "webhook.subscription_deleted",
+        "rule_pack.created",
+        "rule_set_version.drafted",
+        "rule_set_version.published",
+        "rule.created",
+        "rule.updated",
+        "rule.deleted",
         "webhook.delivered",
         "webhook.delivery_failed",
     }
