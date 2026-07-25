@@ -26,6 +26,17 @@ class DocumentOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ProcessDocumentRequest(BaseModel):
+    """specs/04-api-spec.md POST /documents/{id}/process {rule_pack_ids[]?, priority?}.
+    `rule_pack_ids` overrides the org's configured default packs for this run only.
+    `priority` is accepted for contract-compatibility with the real SQS-backed workers
+    (specs/02-architecture.md) — Phase 1's synchronous-in-request pipeline (app/pipeline/
+    run.py's module docstring) has no queue to prioritize against yet, so it's a no-op."""
+
+    rule_pack_ids: list[str] | None = None
+    priority: str | None = None
+
+
 class DocumentAssignPatch(BaseModel):
     assignee_id: str | None = None
     due_date: datetime | None = None

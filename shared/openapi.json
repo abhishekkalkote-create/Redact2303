@@ -1438,6 +1438,38 @@
         "title": "PageOut",
         "type": "object"
       },
+      "ProcessDocumentRequest": {
+        "description": "specs/04-api-spec.md POST /documents/{id}/process {rule_pack_ids[]?, priority?}.\n`rule_pack_ids` overrides the org's configured default packs for this run only.\n`priority` is accepted for contract-compatibility with the real SQS-backed workers\n(specs/02-architecture.md) \u2014 Phase 1's synchronous-in-request pipeline (app/pipeline/\nrun.py's module docstring) has no queue to prioritize against yet, so it's a no-op.",
+        "properties": {
+          "priority": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priority"
+          },
+          "rule_pack_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule Pack Ids"
+          }
+        },
+        "title": "ProcessDocumentRequest",
+        "type": "object"
+      },
       "ProposedRuleChangeOut": {
         "properties": {
           "action": {
@@ -4319,6 +4351,91 @@
           }
         },
         "summary": "Get Page Preview",
+        "tags": [
+          "documents"
+        ]
+      }
+    },
+    "/v1/documents/{doc_id}/process": {
+      "post": {
+        "description": "specs/04-api-spec.md POST /documents/{id}/process \u2014 \"(re)run detection; re-run\ncreates new candidates, keeps decisions on unchanged spans\" (app/pipeline/run.py's\nreprocess_document). Gated like review.py's other document-wide, decision-affecting\nactions (approve_doc/return_doc/resolve-escalation) rather than open to every\nreviewer, since it can reopen a document that's already past individual review.",
+        "operationId": "process_document_route_v1_documents__doc_id__process_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doc_id",
+            "required": true,
+            "schema": {
+              "title": "Doc Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcessDocumentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Process Document Route",
         "tags": [
           "documents"
         ]

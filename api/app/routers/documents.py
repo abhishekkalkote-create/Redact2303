@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Form, Query, Response, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.deps import get_membership, get_org_db
+from app.auth.deps import get_membership, get_org_db, require_role
 from app.core.errors import NotFoundError
 from app.core.ids import new_id
 from app.crypto.envelope import get_cipher
@@ -26,7 +26,7 @@ from app.pipeline.intake import (
     sniff_mime,
     validate_and_scan,
 )
-from app.pipeline.run import process_document
+from app.pipeline.run import process_document, reprocess_document
 from app.schemas.document import (
     BatchRejection,
     BatchUploadResult,
@@ -36,6 +36,7 @@ from app.schemas.document import (
     DocumentOut,
     ManifestOut,
     PageOut,
+    ProcessDocumentRequest,
 )
 from app.schemas.request import RequestCreate, RequestOut
 from app.services.audit_service import write_audit_event
@@ -224,6 +225,26 @@ async def patch_document(
             metadata={"fields": list(updates)},
         )
     await db.flush()
+    await db.refresh(document)
+    return document
+
+
+@router.post("/documents/{doc_id}/process", response_model=DocumentOut)
+async def process_document_route(
+    doc_id: str,
+    payload: ProcessDocumentRequest,
+    membership: Membership = Depends(require_role("agency_admin", "supervisor")),
+    db: AsyncSession = Depends(get_org_db),
+) -> Document:
+    """specs/04-api-spec.md POST /documents/{id}/process — "(re)run detection; re-run
+    creates new candidates, keeps decisions on unchanged spans" (app/pipeline/run.py's
+    reprocess_document). Gated like review.py's other document-wide, decision-affecting
+    actions (approve_doc/return_doc/resolve-escalation) rather than open to every
+    reviewer, since it can reopen a document that's already past individual review."""
+    document = await db.get(Document, doc_id)
+    if document is None:
+        raise NotFoundError("Document not found")
+    await reprocess_document(db, membership.org_id, doc_id, membership.user_id, payload.rule_pack_ids)
     await db.refresh(document)
     return document
 

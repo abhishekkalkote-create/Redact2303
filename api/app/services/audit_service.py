@@ -26,6 +26,7 @@ ACTIONS = frozenset(
         "document.processing_started",
         "document.ready_for_review",
         "document.processing_failed",
+        "document.reprocessed",
         "candidate.created",
         "candidate.approved",
         "candidate.rejected",

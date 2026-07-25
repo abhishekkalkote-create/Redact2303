@@ -57,14 +57,21 @@ async def _default_rule_pack_ids(session: AsyncSession, org_id: str) -> list[str
     return [row[0] for row in result.all()]
 
 
-async def get_active_rules(session: AsyncSession, org_id: str) -> tuple[list[Rule], dict[str, int], list[str]]:
+async def get_active_rules(
+    session: AsyncSession, org_id: str, rule_pack_ids: list[str] | None = None
+) -> tuple[list[Rule], dict[str, int], list[str]]:
     """Resolves which rule_set_versions apply for this org, and returns their active
     deterministic rules. Returns (rules, version_number_by_rsv_id, rule_set_version_ids)
     — the last two exist for provenance: `documents.rule_set_version_ids` is "locked at
     processing" per specs/03-data-model.md, and each candidate's source_rule_version
     should name the actual published version a rule came from, not just the rule's own
-    (unversioned) id."""
-    pack_ids = await _default_rule_pack_ids(session, org_id)
+    (unversioned) id.
+
+    `rule_pack_ids`, when given, overrides the org's configured default packs —
+    specs/04-api-spec.md POST /documents/{id}/process accepts an explicit
+    `rule_pack_ids[]` for exactly this: re-running detection against a different pack
+    selection than the org default without changing that default."""
+    pack_ids = rule_pack_ids if rule_pack_ids is not None else await _default_rule_pack_ids(session, org_id)
     if not pack_ids:
         return [], {}, []
 

@@ -372,6 +372,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{doc_id}/process": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Process Document Route
+         * @description specs/04-api-spec.md POST /documents/{id}/process — "(re)run detection; re-run
+         *     creates new candidates, keeps decisions on unchanged spans" (app/pipeline/run.py's
+         *     reprocess_document). Gated like review.py's other document-wide, decision-affecting
+         *     actions (approve_doc/return_doc/resolve-escalation) rather than open to every
+         *     reviewer, since it can reopen a document that's already past individual review.
+         */
+        post: operations["process_document_route_v1_documents__doc_id__process_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents/{doc_id}/review:approve": {
         parameters: {
             query?: never;
@@ -1450,6 +1474,20 @@ export interface components {
             rotation: number;
             /** Width */
             width: number;
+        };
+        /**
+         * ProcessDocumentRequest
+         * @description specs/04-api-spec.md POST /documents/{id}/process {rule_pack_ids[]?, priority?}.
+         *     `rule_pack_ids` overrides the org's configured default packs for this run only.
+         *     `priority` is accepted for contract-compatibility with the real SQS-backed workers
+         *     (specs/02-architecture.md) — Phase 1's synchronous-in-request pipeline (app/pipeline/
+         *     run.py's module docstring) has no queue to prioritize against yet, so it's a no-op.
+         */
+        ProcessDocumentRequest: {
+            /** Priority */
+            priority?: string | null;
+            /** Rule Pack Ids */
+            rule_pack_ids?: string[] | null;
         };
         /** ProposedRuleChangeOut */
         ProposedRuleChangeOut: {
@@ -2597,6 +2635,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    process_document_route_v1_documents__doc_id__process_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                doc_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProcessDocumentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentOut"];
                 };
             };
             /** @description Validation Error */
