@@ -308,6 +308,9 @@ export default function DashboardPage() {
           <Link href="/documents" className={buttonVariants({ variant: "outline" })}>
             Documents
           </Link>
+          <Link href="/rules" className={buttonVariants({ variant: "outline" })}>
+            Rules & Policies
+          </Link>
           <Button variant="outline" onClick={handleLogout}>
             Log out
           </Button>

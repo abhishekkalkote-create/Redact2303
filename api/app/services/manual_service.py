@@ -108,6 +108,13 @@ async def run_extraction(session: AsyncSession, org_id: str, manual_id: str) -> 
     return manual
 
 
+async def list_manuals(session: AsyncSession) -> list[Manual]:
+    """RLS already scopes `manuals` to the calling org — no explicit org_id filter needed
+    (matches app/services/document_service.list_documents's convention)."""
+    result = await session.execute(select(Manual).order_by(Manual.created_at.desc()))
+    return list(result.scalars().all())
+
+
 async def list_draft_rules(session: AsyncSession, manual_id: str) -> list[DraftRule]:
     result = await session.execute(select(DraftRule).where(DraftRule.manual_id == manual_id).order_by(DraftRule.created_at))
     return list(result.scalars().all())

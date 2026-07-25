@@ -518,6 +518,10 @@ export interface paths {
          * List Exemption Codes
          * @description specs/04-api-spec.md GET /exemption-codes — the org's own taxonomy (already cloned
          *     from the federal + state library at org creation, see exemption_service.py).
+         *     LEFT JOINs ExemptionLibrary for `level`/`state` — specs/07-ui-spec.md screen 6's
+         *     taxonomy view groups by federal/state/org, and only the library row (not the org's
+         *     own clone) carries that classification; a code with no `library_id` is itself an
+         *     org-only custom code, i.e. the "org" group.
          */
         get: operations["list_exemption_codes_v1_exemption_codes_get"];
         put?: never;
@@ -594,7 +598,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** List Manuals Route */
+        get: operations["list_manuals_route_v1_manuals_get"];
         put?: never;
         /**
          * Upload Manual Route
@@ -1246,6 +1251,12 @@ export interface components {
             id: string;
             /** Label */
             label: string;
+            /** Level */
+            level?: string | null;
+            /** Library Id */
+            library_id?: string | null;
+            /** State */
+            state?: string | null;
             /** Status */
             status: string;
             /** Statute Citation */
@@ -3032,6 +3043,38 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_manuals_route_v1_manuals_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManualOut"][];
                 };
             };
             /** @description Validation Error */

@@ -14,11 +14,20 @@ from app.schemas.rule import RuleOut
 from app.services.manual_service import (
     accept_draft_rule,
     list_draft_rules,
+    list_manuals,
     reject_draft_rule,
     upload_manual,
 )
 
 router = APIRouter(tags=["manuals"])
+
+
+@router.get("/manuals", response_model=list[ManualOut])
+async def list_manuals_route(
+    _membership: Membership = Depends(require_role("agency_admin")),
+    db: AsyncSession = Depends(get_org_db),
+) -> list[Manual]:
+    return await list_manuals(db)
 
 
 @router.post("/manuals", response_model=ManualOut, status_code=201)

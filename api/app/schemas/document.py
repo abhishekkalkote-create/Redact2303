@@ -154,6 +154,12 @@ class ExemptionCodeOut(BaseModel):
     statute_citation: str | None = None
     description: str | None = None
     status: str
+    # specs/07-ui-spec.md screen 6 taxonomy view: "tree grouped federal/state/org" —
+    # `level`/`state` come from the cloned-from ExemptionLibrary row (null for an
+    # org-only custom code with no `library_id`, which is itself the "org" group).
+    library_id: str | None = None
+    level: str | None = None
+    state: str | None = None
 
     model_config = {"from_attributes": True}
 

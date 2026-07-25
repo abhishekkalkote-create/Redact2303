@@ -71,6 +71,9 @@ export default function DocumentsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Documents</h1>
         <div className="flex items-center gap-2">
+          <Link href="/rules" className="text-sm text-neutral-500 hover:underline">
+            Rules & Policies
+          </Link>
           <input
             ref={fileInputRef}
             type="file"
