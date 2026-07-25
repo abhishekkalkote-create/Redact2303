@@ -2402,6 +2402,94 @@
         "title": "SignupResponse",
         "type": "object"
       },
+      "TestBenchMatchOut": {
+        "properties": {
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "page_no": {
+            "title": "Page No",
+            "type": "integer"
+          },
+          "rule_key": {
+            "title": "Rule Key",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "document_id",
+          "page_no",
+          "rule_key",
+          "text"
+        ],
+        "title": "TestBenchMatchOut",
+        "type": "object"
+      },
+      "TestBenchRequest": {
+        "properties": {
+          "document_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Document Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "document_ids"
+        ],
+        "title": "TestBenchRequest",
+        "type": "object"
+      },
+      "TestBenchResponse": {
+        "description": "specs/06-exemption-taxonomy.md \u00a7 Test bench: \"run draft version against selected\nsample documents; show would-be candidates + diff vs current published version.\"\n`added`/`removed` are relative to the pack's current published version (or entirely\n`added`, none `removed`, if the pack has never been published).",
+        "properties": {
+          "added": {
+            "items": {
+              "$ref": "#/components/schemas/TestBenchMatchOut"
+            },
+            "title": "Added",
+            "type": "array"
+          },
+          "published_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published Version Id"
+          },
+          "removed": {
+            "items": {
+              "$ref": "#/components/schemas/TestBenchMatchOut"
+            },
+            "title": "Removed",
+            "type": "array"
+          },
+          "unchanged": {
+            "items": {
+              "$ref": "#/components/schemas/TestBenchMatchOut"
+            },
+            "title": "Unchanged",
+            "type": "array"
+          }
+        },
+        "required": [
+          "added",
+          "removed",
+          "unchanged"
+        ],
+        "title": "TestBenchResponse",
+        "type": "object"
+      },
       "TokenResponse": {
         "properties": {
           "access_token": {
@@ -6939,6 +7027,91 @@
           }
         },
         "summary": "Create Rule Route",
+        "tags": [
+          "rules"
+        ]
+      }
+    },
+    "/v1/rule-set-versions/{version_id}/test": {
+      "post": {
+        "description": "specs/06-exemption-taxonomy.md \u00a7 Test bench: \"run draft version against selected\nsample documents; show would-be candidates + diff vs current published version.\"\nRead-only/diagnostic \u2014 never creates real candidates.",
+        "operationId": "test_rule_set_version_route_v1_rule_set_versions__version_id__test_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "title": "Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestBenchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestBenchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Test Rule Set Version Route",
         "tags": [
           "rules"
         ]

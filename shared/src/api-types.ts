@@ -922,6 +922,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/rule-set-versions/{version_id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test Rule Set Version Route
+         * @description specs/06-exemption-taxonomy.md § Test bench: "run draft version against selected
+         *     sample documents; show would-be candidates + diff vs current published version."
+         *     Read-only/diagnostic — never creates real candidates.
+         */
+        post: operations["test_rule_set_version_route_v1_rule_set_versions__version_id__test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/rules/{rule_id}": {
         parameters: {
             query?: never;
@@ -1747,6 +1769,39 @@ export interface components {
             user_id: string;
             /** Verification Required */
             verification_required: boolean;
+        };
+        /** TestBenchMatchOut */
+        TestBenchMatchOut: {
+            /** Document Id */
+            document_id: string;
+            /** Page No */
+            page_no: number;
+            /** Rule Key */
+            rule_key: string;
+            /** Text */
+            text: string;
+        };
+        /** TestBenchRequest */
+        TestBenchRequest: {
+            /** Document Ids */
+            document_ids: string[];
+        };
+        /**
+         * TestBenchResponse
+         * @description specs/06-exemption-taxonomy.md § Test bench: "run draft version against selected
+         *     sample documents; show would-be candidates + diff vs current published version."
+         *     `added`/`removed` are relative to the pack's current published version (or entirely
+         *     `added`, none `removed`, if the pack has never been published).
+         */
+        TestBenchResponse: {
+            /** Added */
+            added: components["schemas"]["TestBenchMatchOut"][];
+            /** Published Version Id */
+            published_version_id?: string | null;
+            /** Removed */
+            removed: components["schemas"]["TestBenchMatchOut"][];
+            /** Unchanged */
+            unchanged: components["schemas"]["TestBenchMatchOut"][];
         };
         /** TokenResponse */
         TokenResponse: {
@@ -3804,6 +3859,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RuleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_rule_set_version_route_v1_rule_set_versions__version_id__test_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestBenchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestBenchResponse"];
                 };
             };
             /** @description Validation Error */

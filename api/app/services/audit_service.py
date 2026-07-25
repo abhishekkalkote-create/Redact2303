@@ -55,6 +55,7 @@ ACTIONS = frozenset(
         "manual.extraction_failed",
         "draft_rule.accepted",
         "draft_rule.rejected",
+        "rule_set_version.tested",
         "webhook.delivered",
         "webhook.delivery_failed",
     }

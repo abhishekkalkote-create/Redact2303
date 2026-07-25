@@ -15,6 +15,8 @@ from app.schemas.rule import (
     RulePackOut,
     RulePatch,
     RuleSetVersionOut,
+    TestBenchRequest,
+    TestBenchResponse,
 )
 from app.services.rule_service import (
     add_rule,
@@ -27,6 +29,7 @@ from app.services.rule_service import (
     nl_edit_version,
     patch_rule,
     publish_version,
+    run_test_bench,
 )
 
 router = APIRouter(tags=["rules"])
@@ -128,6 +131,20 @@ async def nl_edit_rule_set_version_route(
             for p in proposals
         ],
     )
+
+
+@router.post("/rule-set-versions/{version_id}/test", response_model=TestBenchResponse)
+async def test_rule_set_version_route(
+    version_id: str,
+    payload: TestBenchRequest,
+    membership: Membership = Depends(require_role("agency_admin")),
+    db: AsyncSession = Depends(get_org_db),
+) -> TestBenchResponse:
+    """specs/06-exemption-taxonomy.md § Test bench: "run draft version against selected
+    sample documents; show would-be candidates + diff vs current published version."
+    Read-only/diagnostic — never creates real candidates."""
+    result = await run_test_bench(db, membership.org_id, membership.user_id, version_id, payload.document_ids)
+    return TestBenchResponse(**result)
 
 
 @router.post("/rule-set-versions/{version_id}/publish", response_model=RuleSetVersionOut)

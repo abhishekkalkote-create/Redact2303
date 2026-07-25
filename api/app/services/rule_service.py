@@ -24,12 +24,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import ApiError, NotFoundError
 from app.core.ids import new_id
 from app.llm.provider import get_provider
+from app.models.document import Document
 from app.models.exemption_code import ExemptionCode
 from app.models.rule import Rule, RulePack, RuleSetVersion
+from app.pipeline.extract import extract_pdf
 from app.pipeline.nl_rule_edit import PROMPT_VERSION as NL_EDIT_PROMPT_VERSION
 from app.pipeline.nl_rule_edit import ProposedRuleChange, run_nl_edit
+from app.pipeline.rule_engine import DETERMINISTIC_TRIGGER_TYPES, run_rule
 from app.schemas.rule import RuleCreate, RulePackCreate, RulePatch
 from app.services.audit_service import write_audit_event
+from app.storage import get_store
 
 
 async def list_rule_packs(session: AsyncSession) -> list[RulePack]:
@@ -293,3 +297,86 @@ async def nl_edit_version(
     )
     await session.flush()
     return proposals, NL_EDIT_PROMPT_VERSION
+
+
+async def _published_version_for_pack(session: AsyncSession, rule_pack_id: str) -> RuleSetVersion | None:
+    result = await session.execute(
+        select(RuleSetVersion).where(RuleSetVersion.rule_pack_id == rule_pack_id, RuleSetVersion.status == "published")
+    )
+    return result.scalars().first()
+
+
+async def run_test_bench(
+    session: AsyncSession, org_id: str, user_id: str, version_id: str, document_ids: list[str]
+) -> dict:
+    """specs/06-exemption-taxonomy.md § Test bench: "run draft version against selected
+    sample documents; show would-be candidates + diff vs current published version."
+    Deterministic rules only (regex/dictionary/entity) — llm_context rules aren't
+    executed here either, same scope as app/pipeline/detect.py. Purely diagnostic: reads
+    each document's original PDF fresh and runs the rule engine in-memory; nothing is
+    persisted, no candidates are created."""
+    version, all_rules = await get_version_with_rules(session, version_id)
+    draft_rules = [r for r in all_rules if r.trigger_type in DETERMINISTIC_TRIGGER_TYPES]
+
+    published_version = await _published_version_for_pack(session, version.rule_pack_id)
+    published_rules: list[Rule] = []
+    if published_version is not None and published_version.id != version.id:
+        _pv, pv_rules = await get_version_with_rules(session, published_version.id)
+        published_rules = [r for r in pv_rules if r.trigger_type in DETERMINISTIC_TRIGGER_TYPES]
+
+    store = get_store()
+
+    def _run_against(doc_id: str, rules: list[Rule]) -> dict[tuple[str, int, int, int], tuple[str, str]]:
+        """Returns {(doc_id, page_no, start, end): (rule_key, text)} — keyed by span so
+        draft vs. published results can be diffed by set difference."""
+        document = documents_by_id.get(doc_id)
+        if document is None or document.s3_key_original is None:
+            return {}
+        data = store.get(org_id, document.s3_key_original)
+        pages = extract_pdf(data)
+        spans: dict[tuple[str, int, int, int], tuple[str, str]] = {}
+        for page in pages:
+            for rule in rules:
+                for match in run_rule(page.full_text, rule):
+                    if match.excluded:
+                        continue
+                    spans[(doc_id, page.page_no, match.start, match.end)] = (rule.rule_key, match.text)
+        return spans
+
+    doc_result = await session.execute(select(Document).where(Document.id.in_(document_ids)))
+    documents_by_id = {d.id: d for d in doc_result.scalars().all()}
+
+    draft_spans: dict[tuple[str, int, int, int], tuple[str, str]] = {}
+    published_spans: dict[tuple[str, int, int, int], tuple[str, str]] = {}
+    for doc_id in document_ids:
+        draft_spans.update(_run_against(doc_id, draft_rules))
+        if published_rules:
+            published_spans.update(_run_against(doc_id, published_rules))
+
+    def _to_matches(spans: dict) -> list[dict]:
+        return [
+            {"document_id": key[0], "page_no": key[1], "rule_key": val[0], "text": val[1]}
+            for key, val in spans.items()
+        ]
+
+    added_keys = set(draft_spans) - set(published_spans)
+    removed_keys = set(published_spans) - set(draft_spans)
+    unchanged_keys = set(draft_spans) & set(published_spans)
+
+    result = {
+        "published_version_id": published_version.id if published_version else None,
+        "added": _to_matches({k: draft_spans[k] for k in added_keys}),
+        "removed": _to_matches({k: published_spans[k] for k in removed_keys}),
+        "unchanged": _to_matches({k: draft_spans[k] for k in unchanged_keys}),
+    }
+
+    await write_audit_event(
+        session, org_id=org_id, actor_type="user", actor_id=user_id,
+        action="rule_set_version.tested", object_type="rule_set_version", object_id=version.id,
+        metadata={
+            "document_ids": document_ids, "added": len(added_keys),
+            "removed": len(removed_keys), "unchanged": len(unchanged_keys),
+        },
+    )
+    await session.flush()
+    return result

@@ -119,3 +119,26 @@ class NlEditResponse(BaseModel):
     prompt_version: str
     instruction: str
     proposals: list[ProposedRuleChangeOut]
+
+
+class TestBenchRequest(BaseModel):
+    document_ids: list[str]
+
+
+class TestBenchMatchOut(BaseModel):
+    document_id: str
+    page_no: int
+    rule_key: str
+    text: str
+
+
+class TestBenchResponse(BaseModel):
+    """specs/06-exemption-taxonomy.md § Test bench: "run draft version against selected
+    sample documents; show would-be candidates + diff vs current published version."
+    `added`/`removed` are relative to the pack's current published version (or entirely
+    `added`, none `removed`, if the pack has never been published)."""
+
+    published_version_id: str | None = None
+    added: list[TestBenchMatchOut]
+    removed: list[TestBenchMatchOut]
+    unchanged: list[TestBenchMatchOut]
