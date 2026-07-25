@@ -104,5 +104,12 @@ async def test_deterministic_and_contextual_detection_run_together(db_session: A
 
     async with db_session.begin():
         await set_org(db_session, org_id)
-        doc_result = await db_session.execute(text("SELECT status FROM documents WHERE id = :id"), {"id": doc_id})
-        assert doc_result.scalar_one() == "ready_for_review"
+        doc_result = await db_session.execute(
+            text("SELECT status, rule_set_version_ids FROM documents WHERE id = :id"), {"id": doc_id}
+        )
+        row = doc_result.one()
+        assert row.status == "ready_for_review"
+        # specs/03-data-model.md: "locked at processing" — all 5 starter packs, since this
+        # org never configured settings.default_rule_pack_ids.
+        assert row.rule_set_version_ids is not None
+        assert len(row.rule_set_version_ids) == 5

@@ -23,9 +23,10 @@ class ReviewAction(Base, TimestampMixin):
     doc_id: Mapped[str] = mapped_column(
         String, ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    candidate_id: Mapped[str | None] = mapped_column(
-        String, ForeignKey("redaction_candidates.id"), nullable=True
-    )
+    # No FK to redaction_candidates (migration 0009) — a review action describing what a
+    # human did to a candidate must survive that candidate later being merged away or
+    # deleted, matching audit_events' own "outlives the row it describes" design intent.
+    candidate_id: Mapped[str | None] = mapped_column(String, nullable=True)
     user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False)
     action: Mapped[str] = mapped_column(String, nullable=False)
     payload: Mapped[dict | None] = mapped_column(JSON, nullable=True)

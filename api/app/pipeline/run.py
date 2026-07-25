@@ -19,7 +19,7 @@ from app.models.manifest import Manifest
 from app.models.processing_job import ProcessingJob
 from app.models.redaction_candidate import RedactionCandidate
 from app.models.usage_record import UsageRecord
-from app.pipeline.detect import detect_page
+from app.pipeline.detect import detect_page, get_active_rules
 from app.pipeline.detect_llm import detect_page_contextual
 from app.pipeline.extract import extract_pdf
 from app.pipeline.merge import MergeInput, group_recurrence, merge_overlapping
@@ -117,6 +117,11 @@ async def process_document(session: AsyncSession, org_id: str, doc_id: str, acto
     session.add(detect_job)
     await session.flush()
 
+    # specs/03-data-model.md: rule_set_version_ids "locked at processing" — resolved once
+    # per document, not once per page.
+    active_rules, version_number_by_rsv_id, rule_set_version_ids = await get_active_rules(session, org_id)
+    document.rule_set_version_ids = rule_set_version_ids
+
     provider = get_provider()
     all_candidates: list[RedactionCandidate] = []
     total_hallucinated = 0
@@ -125,7 +130,7 @@ async def process_document(session: AsyncSession, org_id: str, doc_id: str, acto
     llm_pages_used = 0
 
     for page in pages:
-        deterministic = await detect_page(session, org_id, doc_id, page)
+        deterministic = await detect_page(session, org_id, doc_id, page, active_rules, version_number_by_rsv_id)
         all_candidates.extend(deterministic)
 
         # specs/05-redaction-pipeline.md Stage 4 selection: only pages with narrative text

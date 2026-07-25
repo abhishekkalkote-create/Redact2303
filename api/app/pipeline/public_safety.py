@@ -1,14 +1,18 @@
-"""Public Safety starter pack (specs/06-exemption-taxonomy.md starter packs;
-specs/10-build-plan.md Phase 2: "Public Safety + HR + Legal starter packs with
-llm_context rules"). Phase 4 (rules engine self-service) turns these into DB-editable
-rule_packs/rules; for Phase 2 they're a fixed Python config, same pattern as
-app/pipeline/core_pii.py's Core PII pack — a code change to edit, not a UI change, until
-Phase 4 lands.
+"""Public Safety starter pack's LLM-context instructions (specs/06-exemption-taxonomy.md
+starter packs; specs/10-build-plan.md Phase 2: "Public Safety + HR + Legal starter packs
+with llm_context rules"). Still a fixed Python config — Phase 4 gave the *deterministic*
+Core PII/Public Safety/HR/Legal/Health rules real DB rows (app/seed/starter_rule_packs.py,
+rule_key prefixes CPII-/PS-/HR-/LP-/HL-, executed via app/pipeline/detect.py +
+app/pipeline/rule_engine.py) and even seeded matching llm_context rows (PS-6, HR-3, LP-3),
+but app/pipeline/detect_llm.py's contextual pass doesn't read from the rules engine yet —
+it's still wired to this file. Migrating it means designing how multiple orgs'
+active llm_context rules aggregate into one prompt, which is real, separate work.
 
-HR and Legal starter packs are NOT included yet — Public Safety is the one specs/10's
-Phase 2 AC actually exercises ("narrative police report where victim/witness names are
-caught by context ... with 7(C) citations"); adding the other two is data-only once this
-shape exists, not attempted here to avoid guessing at content nobody has asked to verify.
+HR and Legal starter packs' LLM instructions are NOT included here yet — Public Safety
+is the one specs/10's Phase 2 AC actually exercises ("narrative police report where
+victim/witness names are caught by context ... with 7(C) citations"); adding the other
+two is data-only once this shape exists, not attempted here to avoid guessing at content
+nobody has asked to verify.
 """
 
 RULE_KEY = "PUBLIC-SAFETY-LLM-P2"

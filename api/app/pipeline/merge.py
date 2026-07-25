@@ -2,8 +2,9 @@
 
 Dedup preference (deterministic vs LLM code): the LLM's citation is usually more specific
 than the deterministic pass's federal-fallback default (e.g. 7(C) victim-identity vs a
-generic b(6) personal-privacy default from Core PII) — see app/pipeline/core_pii.py's own
-comment on why b(6) is a broad fallback, not a precise fit. When codes genuinely disagree
+generic b(6) personal-privacy default from Core PII) — see app/pipeline/detect.py's
+STATE_PII_OVERRIDE_FOR comment on why b(6) is a broad fallback, not a precise fit. When
+codes genuinely disagree
 and neither is a clear fallback, this keeps the LLM's choice as primary but PRESERVES the
 alternative in `detector_versions.alternative_exemption_code_id` rather than discarding it
 silently — a proper "keep both, let the reviewer pick" UI (specs/05-redaction-pipeline.md:

@@ -903,6 +903,8 @@ export interface components {
             page_count?: number | null;
             /** Request Id */
             request_id?: string | null;
+            /** Rule Set Version Ids */
+            rule_set_version_ids?: string[] | null;
             /** Source */
             source: string;
             /** Status */

@@ -572,6 +572,20 @@
             ],
             "title": "Request Id"
           },
+          "rule_set_version_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule Set Version Ids"
+          },
           "source": {
             "title": "Source",
             "type": "string"

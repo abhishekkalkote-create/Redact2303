@@ -19,6 +19,9 @@ class DocumentOut(BaseModel):
     request_id: str | None = None
     assignee_id: str | None = None
     due_date: datetime | None = None
+    # specs/04-api-spec.md: "GET /documents/{id} detail incl. status, pages,
+    # rule_set_version_ids, usage" — which rule_set_versions ran, locked at processing.
+    rule_set_version_ids: list[str] | None = None
 
     model_config = {"from_attributes": True}
 
