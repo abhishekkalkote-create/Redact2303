@@ -107,6 +107,20 @@
         "title": "Body_upload_document_v1_documents_post",
         "type": "object"
       },
+      "Body_upload_manual_route_v1_manuals_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_manual_route_v1_manuals_post",
+        "type": "object"
+      },
       "BulkUpdateRequest": {
         "properties": {
           "action": {
@@ -612,6 +626,202 @@
         "title": "DocumentOut",
         "type": "object"
       },
+      "DraftRuleAcceptRequest": {
+        "properties": {
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config"
+          },
+          "exclusions": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exclusions"
+          },
+          "exemption_code_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exemption Code Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "rule_key": {
+            "title": "Rule Key",
+            "type": "string"
+          },
+          "rule_set_version_id": {
+            "title": "Rule Set Version Id",
+            "type": "string"
+          },
+          "trigger_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trigger Type"
+          }
+        },
+        "required": [
+          "rule_set_version_id",
+          "rule_key"
+        ],
+        "title": "DraftRuleAcceptRequest",
+        "type": "object"
+      },
+      "DraftRuleOut": {
+        "properties": {
+          "ai_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Notes"
+          },
+          "confidence_policy": {
+            "title": "Confidence Policy",
+            "type": "string"
+          },
+          "config": {
+            "additionalProperties": true,
+            "title": "Config",
+            "type": "object"
+          },
+          "exclusions": {
+            "items": {},
+            "title": "Exclusions",
+            "type": "array"
+          },
+          "exemption_code_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exemption Code Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "manual_id": {
+            "title": "Manual Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "priority": {
+            "title": "Priority",
+            "type": "integer"
+          },
+          "rule_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule Key"
+          },
+          "scope": {
+            "title": "Scope",
+            "type": "string"
+          },
+          "source_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Ref"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "trigger_type": {
+            "title": "Trigger Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "manual_id",
+          "name",
+          "trigger_type",
+          "config",
+          "priority",
+          "confidence_policy",
+          "exclusions",
+          "scope",
+          "status"
+        ],
+        "title": "DraftRuleOut",
+        "type": "object"
+      },
+      "DraftRuleRejectRequest": {
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "title": "DraftRuleRejectRequest",
+        "type": "object"
+      },
       "ExemptionCodeOut": {
         "properties": {
           "code": {
@@ -856,6 +1066,51 @@
           "candidates"
         ],
         "title": "ManifestOut",
+        "type": "object"
+      },
+      "ManualOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "extraction_status": {
+            "title": "Extraction Status",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "uploaded_by": {
+            "title": "Uploaded By",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "filename",
+          "uploaded_by",
+          "extraction_status",
+          "created_at"
+        ],
+        "title": "ManualOut",
         "type": "object"
       },
       "MemberOut": {
@@ -4308,6 +4563,175 @@
         ]
       }
     },
+    "/v1/draft-rules/{draft_rule_id}:accept": {
+      "post": {
+        "description": "specs/06-exemption-taxonomy.md: \"accepted drafts land in a new draft rule set\nversion\" \u2014 via the existing rule CRUD (auto-forks a draft if the target version is\npublished).",
+        "operationId": "accept_draft_rule_route_v1_draft_rules__draft_rule_id__accept_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "draft_rule_id",
+            "required": true,
+            "schema": {
+              "title": "Draft Rule Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftRuleAcceptRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Accept Draft Rule Route",
+        "tags": [
+          "manuals"
+        ]
+      }
+    },
+    "/v1/draft-rules/{draft_rule_id}:reject": {
+      "post": {
+        "operationId": "reject_draft_rule_route_v1_draft_rules__draft_rule_id__reject_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "draft_rule_id",
+            "required": true,
+            "schema": {
+              "title": "Draft Rule Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftRuleRejectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftRuleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reject Draft Rule Route",
+        "tags": [
+          "manuals"
+        ]
+      }
+    },
     "/v1/exemption-codes": {
       "get": {
         "description": "specs/04-api-spec.md GET /exemption-codes \u2014 the org's own taxonomy (already cloned\nfrom the federal + state library at org creation, see exemption_service.py).",
@@ -4589,6 +5013,160 @@
         "summary": "Accept Invite Route",
         "tags": [
           "invites"
+        ]
+      }
+    },
+    "/v1/manuals": {
+      "post": {
+        "description": "specs/04-api-spec.md POST /manuals \u2014 \"upload manual \u2192 extraction job.\" Runs\nsynchronously (same Phase 1 simplification as document processing); by the time this\nresponds, GET .../draft-rules already has results (or the manual's extraction_status\nis \"failed\" with `error` set).",
+        "operationId": "upload_manual_route_v1_manuals_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_manual_route_v1_manuals_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManualOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Manual Route",
+        "tags": [
+          "manuals"
+        ]
+      }
+    },
+    "/v1/manuals/{manual_id}/draft-rules": {
+      "get": {
+        "operationId": "list_manual_draft_rules_route_v1_manuals__manual_id__draft_rules_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "manual_id",
+            "required": true,
+            "schema": {
+              "title": "Manual Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DraftRuleOut"
+                  },
+                  "title": "Response List Manual Draft Rules Route V1 Manuals  Manual Id  Draft Rules Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Manual Draft Rules Route",
+        "tags": [
+          "manuals"
         ]
       }
     },

@@ -61,7 +61,7 @@ def summarize_existing_rules(rules: list) -> str:
     return "\n".join(lines)
 
 
-def _validate_regex(pattern: str) -> str | None:
+def validate_regex(pattern: str) -> str | None:
     try:
         re.compile(pattern)
     except re.error as exc:
@@ -91,7 +91,7 @@ def _validate_change(raw: dict, existing_rule_keys: set[str], allowed_codes: set
 
     config = raw.get("config")
     if trigger_type == "regex" and config and "pattern" in config:
-        error = _validate_regex(config["pattern"])
+        error = validate_regex(config["pattern"])
         if error:
             return error
 

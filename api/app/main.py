@@ -18,6 +18,7 @@ from app.routers import (
     exports,
     health,
     invites,
+    manuals,
     members,
     orgs,
     requests,
@@ -64,3 +65,4 @@ app.include_router(audit.router, prefix=settings.api_v1_prefix)
 app.include_router(dashboard.router, prefix=settings.api_v1_prefix)
 app.include_router(webhooks.router, prefix=settings.api_v1_prefix)
 app.include_router(rules.router, prefix=settings.api_v1_prefix)
+app.include_router(manuals.router, prefix=settings.api_v1_prefix)

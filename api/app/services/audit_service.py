@@ -50,6 +50,11 @@ ACTIONS = frozenset(
         "rule.updated",
         "rule.deleted",
         "rule_set_version.nl_edit_proposed",
+        "manual.uploaded",
+        "manual.extraction_completed",
+        "manual.extraction_failed",
+        "draft_rule.accepted",
+        "draft_rule.rejected",
         "webhook.delivered",
         "webhook.delivery_failed",
     }

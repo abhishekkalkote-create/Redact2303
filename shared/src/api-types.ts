@@ -444,6 +444,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/draft-rules/{draft_rule_id}:accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept Draft Rule Route
+         * @description specs/06-exemption-taxonomy.md: "accepted drafts land in a new draft rule set
+         *     version" — via the existing rule CRUD (auto-forks a draft if the target version is
+         *     published).
+         */
+        post: operations["accept_draft_rule_route_v1_draft_rules__draft_rule_id__accept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/draft-rules/{draft_rule_id}:reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject Draft Rule Route */
+        post: operations["reject_draft_rule_route_v1_draft_rules__draft_rule_id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/exemption-codes": {
         parameters: {
             query?: never;
@@ -518,6 +557,46 @@ export interface paths {
         put?: never;
         /** Accept Invite Route */
         post: operations["accept_invite_route_v1_invites__token__accept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/manuals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Manual Route
+         * @description specs/04-api-spec.md POST /manuals — "upload manual → extraction job." Runs
+         *     synchronously (same Phase 1 simplification as document processing); by the time this
+         *     responds, GET .../draft-rules already has results (or the manual's extraction_status
+         *     is "failed" with `error` set).
+         */
+        post: operations["upload_manual_route_v1_manuals_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/manuals/{manual_id}/draft-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Manual Draft Rules Route */
+        get: operations["list_manual_draft_rules_route_v1_manuals__manual_id__draft_rules_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -903,6 +982,11 @@ export interface components {
             /** Request Id */
             request_id?: string | null;
         };
+        /** Body_upload_manual_route_v1_manuals_post */
+        Body_upload_manual_route_v1_manuals_post: {
+            /** File */
+            file: string;
+        };
         /** BulkUpdateRequest */
         BulkUpdateRequest: {
             /** Action */
@@ -1049,6 +1133,63 @@ export interface components {
             /** Uploaded By */
             uploaded_by: string;
         };
+        /** DraftRuleAcceptRequest */
+        DraftRuleAcceptRequest: {
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            } | null;
+            /** Exclusions */
+            exclusions?: unknown[] | null;
+            /** Exemption Code Id */
+            exemption_code_id?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Rule Key */
+            rule_key: string;
+            /** Rule Set Version Id */
+            rule_set_version_id: string;
+            /** Trigger Type */
+            trigger_type?: string | null;
+        };
+        /** DraftRuleOut */
+        DraftRuleOut: {
+            /** Ai Notes */
+            ai_notes?: string | null;
+            /** Confidence Policy */
+            confidence_policy: string;
+            /** Config */
+            config: {
+                [key: string]: unknown;
+            };
+            /** Exclusions */
+            exclusions: unknown[];
+            /** Exemption Code Id */
+            exemption_code_id?: string | null;
+            /** Id */
+            id: string;
+            /** Manual Id */
+            manual_id: string;
+            /** Name */
+            name: string;
+            /** Priority */
+            priority: number;
+            /** Rule Key */
+            rule_key?: string | null;
+            /** Scope */
+            scope: string;
+            /** Source Ref */
+            source_ref?: string | null;
+            /** Status */
+            status: string;
+            /** Trigger Type */
+            trigger_type: string;
+        };
+        /** DraftRuleRejectRequest */
+        DraftRuleRejectRequest: {
+            /** Note */
+            note?: string | null;
+        };
         /** ExemptionCodeOut */
         ExemptionCodeOut: {
             /** Code */
@@ -1147,6 +1288,24 @@ export interface components {
             schema_version: number;
             /** Version */
             version: number;
+        };
+        /** ManualOut */
+        ManualOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Error */
+            error?: string | null;
+            /** Extraction Status */
+            extraction_status: string;
+            /** Filename */
+            filename: string;
+            /** Id */
+            id: string;
+            /** Uploaded By */
+            uploaded_by: string;
         };
         /** MemberOut */
         MemberOut: {
@@ -2544,6 +2703,82 @@ export interface operations {
             };
         };
     };
+    accept_draft_rule_route_v1_draft_rules__draft_rule_id__accept_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                draft_rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftRuleAcceptRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_draft_rule_route_v1_draft_rules__draft_rule_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                draft_rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftRuleRejectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftRuleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_exemption_codes_v1_exemption_codes_get: {
         parameters: {
             query?: never;
@@ -2666,6 +2901,76 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_manual_route_v1_manuals_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_manual_route_v1_manuals_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManualOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_manual_draft_rules_route_v1_manuals__manual_id__draft_rules_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                manual_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftRuleOut"][];
                 };
             };
             /** @description Validation Error */

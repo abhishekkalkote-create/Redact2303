@@ -114,7 +114,7 @@ def parse_findings(response_text: str) -> list[RawFinding]:
         return []
 
 
-def _best_fuzzy_span(haystack: str, needle: str) -> tuple[int, int, float]:
+def best_fuzzy_span(haystack: str, needle: str) -> tuple[int, int, float]:
     """Slides a needle-length window across haystack and returns the best-matching span's
     (start, end, similarity_ratio). Exact substring match short-circuits to ratio=1.0."""
     exact = haystack.find(needle)
@@ -140,7 +140,7 @@ def ground_findings(
     grounded = []
     hallucinated = 0
     for finding in findings:
-        start, end, ratio = _best_fuzzy_span(chunk.text, finding.quote)
+        start, end, ratio = best_fuzzy_span(chunk.text, finding.quote)
         if ratio < GROUNDING_SIMILARITY_THRESHOLD:
             hallucinated += 1
             continue
