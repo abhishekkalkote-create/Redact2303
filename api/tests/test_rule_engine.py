@@ -64,6 +64,21 @@ def test_entity_rule_matches_configured_entity_type() -> None:
     assert "234-56-7890" in matches[0].text
 
 
+def test_entity_rule_context_words_narrows_broad_entity_types() -> None:
+    """The exact seam app/pipeline/core_pii.py's docstring calls out: DATE_TIME is too
+    broad/noisy on its own, but a DOB-context filter makes it a sensible detector."""
+    rule = _rule(
+        "entity", {"entity_type": "DATE_TIME", "context_words": ["DOB", "date of birth"], "context_window": 8}
+    )
+    matches = run_rule(
+        "Meeting scheduled for March 3, 2026, in the main conference room.  "
+        "Client DOB: January 5, 1990.",
+        rule,
+    )
+    assert len(matches) == 1
+    assert "1990" in matches[0].text
+
+
 def test_metadata_and_llm_context_trigger_types_produce_no_deterministic_matches() -> None:
     assert run_rule("some text", _rule("metadata", {"field": "author"})) == []
     assert run_rule("some text", _rule("llm_context", {"instruction": "redact X"})) == []

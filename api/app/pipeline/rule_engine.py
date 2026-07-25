@@ -64,6 +64,11 @@ def _ssn_format_valid(digits: str) -> bool:
 _VALIDATORS = {"luhn": _luhn_valid, "ssn_format": _ssn_format_valid}
 
 
+def _context_words_nearby(text: str, start: int, end: int, context_words: list[str], context_window: int) -> bool:
+    window = text[max(0, start - context_window) : end + context_window].lower()
+    return any(word.lower() in window for word in context_words)
+
+
 def _run_regex_rule(text: str, config: dict) -> list[tuple[int, int, str, float]]:
     pattern = config["pattern"]
     validators = config.get("validators", [])
@@ -76,10 +81,8 @@ def _run_regex_rule(text: str, config: dict) -> list[tuple[int, int, str, float]
         digits = re.sub(r"\D", "", matched_text)
         if any(name in validators and not _VALIDATORS[name](digits) for name in validators if name in _VALIDATORS):
             continue
-        if context_words:
-            window = text[max(0, m.start() - context_window) : m.end() + context_window].lower()
-            if not any(word.lower() in window for word in context_words):
-                continue
+        if context_words and not _context_words_nearby(text, m.start(), m.end(), context_words, context_window):
+            continue
         matches.append((m.start(), m.end(), matched_text, 0.9))
     return matches
 
@@ -98,9 +101,22 @@ def _run_dictionary_rule(text: str, config: dict) -> list[tuple[int, int, str, f
 
 
 def _run_entity_rule(text: str, config: dict) -> list[tuple[int, int, str, float]]:
+    """`context_words` here narrows an otherwise-too-broad entity type (e.g. DATE_TIME
+    or LOCATION) to only the occurrences near a qualifying phrase — see
+    app/pipeline/core_pii.py's own docstring on why those two are excluded from the
+    unconditional starter set: this is exactly the "rules-engine change, not a code
+    change" it was written to unblock."""
     entity_type = config["entity_type"]
+    context_words = config.get("context_words", [])
+    context_window = config.get("context_window", 40)
+
     results = _analyzer().analyze(text=text, language="en", entities=[entity_type])
-    return [(r.start, r.end, text[r.start : r.end], r.score) for r in results]
+    matches = []
+    for r in results:
+        if context_words and not _context_words_nearby(text, r.start, r.end, context_words, context_window):
+            continue
+        matches.append((r.start, r.end, text[r.start : r.end], r.score))
+    return matches
 
 
 def _evaluate_exclusions(text: str, start: int, end: int, exclusions: list[dict]) -> tuple[bool, str | None]:
