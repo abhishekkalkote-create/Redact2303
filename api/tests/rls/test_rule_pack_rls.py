@@ -107,4 +107,7 @@ async def test_org_sees_global_and_own_but_not_other_orgs_rule_packs(db_session:
         await set_org(db_session, "org_rp_e")
         result = await db_session.execute(text("SELECT id FROM rule_packs ORDER BY id"))
         visible = {row[0] for row in result.all()}
-        assert visible == {"rpk_rls_starter", "rpk_rls_e_own"}, "must see global + own, never another org's"
+        # Real starter packs (migration 0008) are always present alongside these
+        # test-specific rows — assert relative membership, not an exact closed set.
+        assert {"rpk_rls_starter", "rpk_rls_e_own"} <= visible, "must see the global row and its own"
+        assert "rpk_rls_f_own" not in visible, "must never see another org's rule pack"
