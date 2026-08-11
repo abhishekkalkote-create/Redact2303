@@ -16,6 +16,7 @@ from fastapi import APIRouter, Depends
 from app.auth.deps import require_internal_cron_secret
 from app.db.session import list_all_org_ids, org_session
 from app.models.organization import Organization
+from app.services.retention_service import run_retention_sweep
 from app.services.usage_service import aggregate_and_report_usage, check_usage_thresholds
 from app.services.webhook_service import retry_pending_deliveries
 
@@ -65,3 +66,20 @@ async def usage_threshold_check_tick() -> dict:
             if fired:
                 events_fired[org_id] = fired
     return {"events_fired": events_fired}
+
+
+@router.post("/retention-sweep")
+async def retention_sweep_tick() -> dict:
+    """specs/08-security-compliance.md § Data lifecycle: purges document originals +
+    previews past their org's retention_days_uploads, honoring legal_hold on the
+    document and its request. See app/services/retention_service.py's module docstring
+    for why export retention isn't included here."""
+    now = datetime.now(UTC)
+    documents_purged = 0
+    for org_id in await list_all_org_ids():
+        async with org_session(org_id) as session:
+            org = await session.get(Organization, org_id)
+            if org is None:
+                continue
+            documents_purged += await run_retention_sweep(session, org, now)
+    return {"documents_purged": documents_purged}

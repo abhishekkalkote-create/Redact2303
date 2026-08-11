@@ -22,6 +22,11 @@ class DocumentOut(BaseModel):
     # specs/04-api-spec.md: "GET /documents/{id} detail incl. status, pages,
     # rule_set_version_ids, usage" — which rule_set_versions ran, locked at processing.
     rule_set_version_ids: list[str] | None = None
+    # specs/08-security-compliance.md § Data lifecycle — legal_hold blocks the retention
+    # sweep (app/services/retention_service.py); deleted_at is stamped once that sweep
+    # purges this document's content.
+    legal_hold: bool = False
+    deleted_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 

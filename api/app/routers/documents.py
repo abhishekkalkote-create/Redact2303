@@ -39,10 +39,16 @@ from app.schemas.document import (
     PageOut,
     ProcessDocumentRequest,
 )
+from app.schemas.legal_hold import LegalHoldRequest
 from app.schemas.request import RequestCreate, RequestOut
 from app.services.audit_service import write_audit_event
 from app.services.document_service import list_documents as list_documents_query
+from app.services.legal_hold_service import clear_document_legal_hold, set_document_legal_hold
 from app.services.request_service import create_request
+from app.services.retention_service import (
+    generate_deletion_certificate_pdf,
+    get_deletion_certificate_facts,
+)
 from app.services.usage_service import check_pilot_page_cap
 from app.storage import get_store
 
@@ -249,6 +255,41 @@ async def patch_document(
     await db.flush()
     await db.refresh(document)
     return document
+
+
+@router.post("/documents/{doc_id}/legal-hold", response_model=DocumentOut)
+async def set_document_legal_hold_route(
+    doc_id: str,
+    payload: LegalHoldRequest,
+    membership: Membership = Depends(require_role("agency_admin", "supervisor")),
+    db: AsyncSession = Depends(get_org_db),
+) -> Document:
+    return await set_document_legal_hold(db, membership.org_id, membership.user_id, doc_id, payload.note)
+
+
+@router.delete("/documents/{doc_id}/legal-hold", response_model=DocumentOut)
+async def clear_document_legal_hold_route(
+    doc_id: str,
+    payload: LegalHoldRequest,
+    membership: Membership = Depends(require_role("agency_admin", "supervisor")),
+    db: AsyncSession = Depends(get_org_db),
+) -> Document:
+    return await clear_document_legal_hold(db, membership.org_id, membership.user_id, doc_id, payload.note)
+
+
+@router.get("/documents/{doc_id}/deletion-certificate")
+async def get_document_deletion_certificate(
+    doc_id: str, membership: Membership = Depends(get_membership), db: AsyncSession = Depends(get_org_db)
+) -> Response:
+    """specs/08-security-compliance.md: "certificate of deletion available." Generated
+    on demand from the retention sweep's own audit event — see
+    app/services/retention_service.py."""
+    facts = await get_deletion_certificate_facts(db, membership.org_id, doc_id)
+    pdf_bytes = generate_deletion_certificate_pdf(facts)
+    return Response(
+        content=pdf_bytes, media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=deletion-certificate-{doc_id}.pdf"},
+    )
 
 
 @router.post("/documents/{doc_id}/process", response_model=DocumentOut)

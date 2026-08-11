@@ -68,6 +68,11 @@ ACTIONS = frozenset(
         "support_grant.requested",
         "support_grant.approved",
         "support_grant.denied",
+        "document.legal_hold_set",
+        "document.legal_hold_cleared",
+        "request.legal_hold_set",
+        "request.legal_hold_cleared",
+        "document.retention_purged",
     }
 )
 

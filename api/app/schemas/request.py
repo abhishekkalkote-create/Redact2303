@@ -18,6 +18,9 @@ class RequestOut(BaseModel):
     due_date: datetime | None = None
     assignee_id: str | None = None
     created_at: datetime
+    # specs/08-security-compliance.md § Data lifecycle — blocks the retention sweep for
+    # every document under this request (app/services/retention_service.py).
+    legal_hold: bool = False
 
     model_config = {"from_attributes": True}
 

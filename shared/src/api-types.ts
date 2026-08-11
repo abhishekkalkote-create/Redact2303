@@ -427,6 +427,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{doc_id}/deletion-certificate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Document Deletion Certificate
+         * @description specs/08-security-compliance.md: "certificate of deletion available." Generated
+         *     on demand from the retention sweep's own audit event — see
+         *     app/services/retention_service.py.
+         */
+        get: operations["get_document_deletion_certificate_v1_documents__doc_id__deletion_certificate_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents/{doc_id}/exports": {
         parameters: {
             query?: never;
@@ -439,6 +461,24 @@ export interface paths {
         /** Export Document */
         post: operations["export_document_v1_documents__doc_id__exports_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{doc_id}/legal-hold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Document Legal Hold Route */
+        post: operations["set_document_legal_hold_route_v1_documents__doc_id__legal_hold_post"];
+        /** Clear Document Legal Hold Route */
+        delete: operations["clear_document_legal_hold_route_v1_documents__doc_id__legal_hold_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1047,6 +1087,24 @@ export interface paths {
         patch: operations["patch_request_route_v1_requests__request_id__patch"];
         trace?: never;
     };
+    "/v1/requests/{request_id}/legal-hold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Request Legal Hold Route */
+        post: operations["set_request_legal_hold_route_v1_requests__request_id__legal_hold_post"];
+        /** Clear Request Legal Hold Route */
+        delete: operations["clear_request_legal_hold_route_v1_requests__request_id__legal_hold_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/rule-improvements-report": {
         parameters: {
             query?: never;
@@ -1479,6 +1537,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Deleted At */
+            deleted_at?: string | null;
             /** Due Date */
             due_date?: string | null;
             /** Error */
@@ -1489,6 +1549,11 @@ export interface components {
             filename: string;
             /** Id */
             id: string;
+            /**
+             * Legal Hold
+             * @default false
+             */
+            legal_hold: boolean;
             /** Mime Type */
             mime_type: string;
             /** Ocr Used */
@@ -1672,6 +1737,16 @@ export interface components {
             period: string;
             /** Status */
             status: string;
+        };
+        /**
+         * LegalHoldRequest
+         * @description specs/08-security-compliance.md § Data lifecycle: "Legal-hold flag per
+         *     document/request suspends deletion." `note` is optional context (e.g. a case/matter
+         *     reference) captured in the audit trail, not a persisted column.
+         */
+        LegalHoldRequest: {
+            /** Note */
+            note?: string | null;
         };
         /** ManifestOut */
         ManifestOut: {
@@ -2106,6 +2181,11 @@ export interface components {
             due_date?: string | null;
             /** Id */
             id: string;
+            /**
+             * Legal Hold
+             * @default false
+             */
+            legal_hold: boolean;
             /** Reference No */
             reference_no?: string | null;
             /** Status */
@@ -3397,6 +3477,40 @@ export interface operations {
             };
         };
     };
+    get_document_deletion_certificate_v1_documents__doc_id__deletion_certificate_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                doc_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     export_document_v1_documents__doc_id__exports_post: {
         parameters: {
             query?: never;
@@ -3422,6 +3536,82 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExportOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_document_legal_hold_route_v1_documents__doc_id__legal_hold_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                doc_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegalHoldRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clear_document_legal_hold_route_v1_documents__doc_id__legal_hold_delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                doc_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegalHoldRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentOut"];
                 };
             };
             /** @description Validation Error */
@@ -4763,6 +4953,82 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["RequestPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_request_legal_hold_route_v1_requests__request_id__legal_hold_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegalHoldRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clear_request_legal_hold_route_v1_requests__request_id__legal_hold_delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegalHoldRequest"];
             };
         };
         responses: {
