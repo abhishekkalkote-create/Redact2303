@@ -14,6 +14,7 @@ from app.models.redaction_candidate import RedactionCandidate
 from app.models.request import RecordsRequest
 from app.models.review_action import ReviewAction
 from app.models.rule import Rule, RulePack, RuleSetVersion
+from app.models.support_grant import SupportGrant
 from app.models.usage_record import UsageRecord
 from app.models.user import User
 from app.models.webhook import WebhookDelivery, WebhookSubscription
@@ -40,6 +41,7 @@ __all__ = [
     "Rule",
     "RulePack",
     "RuleSetVersion",
+    "SupportGrant",
     "UsageRecord",
     "User",
     "WebhookDelivery",

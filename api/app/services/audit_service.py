@@ -63,6 +63,11 @@ ACTIONS = frozenset(
         "billing.payment_succeeded",
         "billing.payment_failed",
         "billing.subscription_canceled",
+        "platform.org_provisioned",
+        "platform.org_updated",
+        "support_grant.requested",
+        "support_grant.approved",
+        "support_grant.denied",
     }
 )
 

@@ -13,6 +13,7 @@ from app.core.errors import ApiError
 from app.db.session import AsyncSessionLocal, org_session, user_session
 from app.models.membership import Membership
 from app.models.organization import Organization
+from app.models.platform_admin import PlatformAdmin
 from app.models.user import User
 
 _SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
@@ -135,6 +136,20 @@ def require_role(*roles: str):
         return membership
 
     return _dep
+
+
+async def require_platform_admin(user: User = Depends(get_current_user)) -> User:
+    """specs/04-api-spec.md: platform admin routes are "platform_admins only" — checked
+    against the platform_admins table (global, no RLS — same plain-session pattern as
+    get_current_user's own users lookup), layered on top of the normal Cognito/dev-auth
+    flow rather than a separate Cognito app client (the spec's "separate subdomain,
+    separate app client" is an infra/deployment-topology decision this slice doesn't
+    touch; see app/routers/platform.py's module docstring)."""
+    async with AsyncSessionLocal() as session:
+        admin = await session.get(PlatformAdmin, user.id)
+    if admin is None:
+        raise ApiError(403, "Forbidden", "Platform admin access required")
+    return user
 
 
 def require_internal_cron_secret(

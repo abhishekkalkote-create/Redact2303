@@ -1,11 +1,10 @@
-import re
-
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from app.billing.provider import get_billing_provider
 from app.core.errors import ConflictError
 from app.core.ids import new_id
+from app.core.slug import slugify
 from app.db.session import org_session, user_session
 from app.models.membership import Membership
 from app.models.organization import DEFAULT_SETTINGS, Organization
@@ -15,11 +14,6 @@ from app.services.audit_service import write_audit_event
 from app.services.exemption_service import clone_library_for_org
 
 MAX_SLUG_ATTEMPTS = 5
-
-
-def _slugify(name: str) -> str:
-    slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
-    return slug or "org"
 
 
 async def create_org(owner: User, payload: OrgCreate) -> Organization:
@@ -49,7 +43,7 @@ async def create_org(owner: User, payload: OrgCreate) -> Organization:
         if existing.scalars().first() is not None:
             raise ConflictError("User already belongs to an organization (v1: one active org per user)")
 
-    base_slug = _slugify(payload.name)
+    base_slug = slugify(payload.name)
 
     for attempt in range(1, MAX_SLUG_ATTEMPTS + 1):
         slug = base_slug if attempt == 1 else f"{base_slug}-{attempt}"

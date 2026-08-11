@@ -24,9 +24,11 @@ from app.routers import (
     manuals,
     members,
     orgs,
+    platform,
     requests,
     review,
     rules,
+    support_grants,
     usage,
     webhooks,
 )
@@ -74,3 +76,5 @@ app.include_router(rules.router, prefix=settings.api_v1_prefix)
 app.include_router(manuals.router, prefix=settings.api_v1_prefix)
 app.include_router(billing.router, prefix=settings.api_v1_prefix)
 app.include_router(usage.router, prefix=settings.api_v1_prefix)
+app.include_router(platform.router, prefix=settings.api_v1_prefix)
+app.include_router(support_grants.router, prefix=settings.api_v1_prefix)

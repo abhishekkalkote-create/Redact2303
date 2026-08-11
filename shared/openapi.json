@@ -1766,6 +1766,243 @@
         "title": "PlanCatalogEntryOut",
         "type": "object"
       },
+      "PlatformOrgOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "jurisdiction_state": {
+            "title": "Jurisdiction State",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "org_type": {
+            "title": "Org Type",
+            "type": "string"
+          },
+          "plan": {
+            "title": "Plan",
+            "type": "string"
+          },
+          "plan_status": {
+            "title": "Plan Status",
+            "type": "string"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "title": "Settings",
+            "type": "object"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "jurisdiction_state",
+          "org_type",
+          "plan",
+          "plan_status",
+          "created_at",
+          "settings"
+        ],
+        "title": "PlatformOrgOut",
+        "type": "object"
+      },
+      "PlatformOrgProvisionRequest": {
+        "description": "specs/09-admin-billing.md \u00a7 Platform admin: \"Org lifecycle: provision\n(sales-assisted).\" owner_email is optional \u2014 set it to send an immediate\nagency_admin invite; omit it to just create the org shell.",
+        "properties": {
+          "jurisdiction_state": {
+            "title": "Jurisdiction State",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "org_type": {
+            "title": "Org Type",
+            "type": "string"
+          },
+          "owner_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Email"
+          },
+          "plan": {
+            "default": "pilot",
+            "title": "Plan",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "jurisdiction_state",
+          "org_type"
+        ],
+        "title": "PlatformOrgProvisionRequest",
+        "type": "object"
+      },
+      "PlatformOrgProvisionResponse": {
+        "properties": {
+          "invite_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invite Token"
+          },
+          "org": {
+            "$ref": "#/components/schemas/PlatformOrgOut"
+          }
+        },
+        "required": [
+          "org"
+        ],
+        "title": "PlatformOrgProvisionResponse",
+        "type": "object"
+      },
+      "PlatformOrgUpdate": {
+        "description": "specs/09-admin-billing.md: \"plan/flag/cap overrides, suspend/reactivate.\"\nplan_status carries suspend/reactivate (set to \"suspended\"/\"active\" \u2014 see\napp/auth/deps.py's get_org_db suspension gate). page_cap_override is\nplatform-admin-only; never exposed on the org-admin-facing OrgSettingsUpdate.",
+        "properties": {
+          "features": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "boolean"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Features"
+          },
+          "page_cap_override": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Cap Override"
+          },
+          "plan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan"
+          },
+          "plan_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Status"
+          }
+        },
+        "title": "PlatformOrgUpdate",
+        "type": "object"
+      },
+      "PlatformUsageOrgSummaryOut": {
+        "properties": {
+          "documents": {
+            "title": "Documents",
+            "type": "integer"
+          },
+          "org_id": {
+            "title": "Org Id",
+            "type": "string"
+          },
+          "org_name": {
+            "title": "Org Name",
+            "type": "string"
+          },
+          "pages_processed": {
+            "title": "Pages Processed",
+            "type": "integer"
+          },
+          "plan": {
+            "title": "Plan",
+            "type": "string"
+          },
+          "plan_status": {
+            "title": "Plan Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "org_id",
+          "org_name",
+          "plan",
+          "plan_status",
+          "pages_processed",
+          "documents"
+        ],
+        "title": "PlatformUsageOrgSummaryOut",
+        "type": "object"
+      },
+      "PlatformUsageOut": {
+        "description": "Cross-tenant usage rollup for the current period. Deliberately NOT the full\ndashboard specs/09-admin-billing.md describes (MRR, margin/COGS, SLO compliance,\nerror/DLQ rates, LLM spend, golden-set accuracy trend) \u2014 none of that is\ninstrumented anywhere in this codebase yet; this exposes only what usage_records\nactually has.",
+        "properties": {
+          "org_count": {
+            "title": "Org Count",
+            "type": "integer"
+          },
+          "orgs": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformUsageOrgSummaryOut"
+            },
+            "title": "Orgs",
+            "type": "array"
+          },
+          "period": {
+            "title": "Period",
+            "type": "string"
+          }
+        },
+        "required": [
+          "period",
+          "org_count",
+          "orgs"
+        ],
+        "title": "PlatformUsageOut",
+        "type": "object"
+      },
       "PortalRequest": {
         "properties": {
           "return_url": {
@@ -2899,6 +3136,106 @@
           "conversion_prompt_due"
         ],
         "title": "SuccessMetricsOut",
+        "type": "object"
+      },
+      "SupportGrantOut": {
+        "properties": {
+          "decided_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "decided_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided By"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "org_id": {
+            "title": "Org Id",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "requested_at": {
+            "format": "date-time",
+            "title": "Requested At",
+            "type": "string"
+          },
+          "requested_by": {
+            "title": "Requested By",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "org_id",
+          "requested_by",
+          "reason",
+          "status",
+          "requested_at",
+          "decided_by",
+          "decided_at",
+          "expires_at",
+          "is_active"
+        ],
+        "title": "SupportGrantOut",
+        "type": "object"
+      },
+      "SupportGrantRequest": {
+        "properties": {
+          "org_id": {
+            "title": "Org Id",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "org_id",
+          "reason"
+        ],
+        "title": "SupportGrantRequest",
         "type": "object"
       },
       "TestBenchMatchOut": {
@@ -6959,6 +7296,75 @@
         ]
       }
     },
+    "/v1/orgs/current/support-grants": {
+      "get": {
+        "operationId": "list_support_grants_v1_orgs_current_support_grants_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SupportGrantOut"
+                  },
+                  "title": "Response List Support Grants V1 Orgs Current Support Grants Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Support Grants",
+        "tags": [
+          "support-grants"
+        ]
+      }
+    },
     "/v1/orgs/current/webhooks": {
       "get": {
         "operationId": "list_webhook_subscriptions_v1_orgs_current_webhooks_get",
@@ -7244,6 +7650,348 @@
         "summary": "List Webhook Deliveries",
         "tags": [
           "webhooks"
+        ]
+      }
+    },
+    "/v1/platform/orgs": {
+      "get": {
+        "operationId": "list_platform_orgs_v1_platform_orgs_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PlatformOrgOut"
+                  },
+                  "title": "Response List Platform Orgs V1 Platform Orgs Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Platform Orgs",
+        "tags": [
+          "platform-admin"
+        ]
+      },
+      "post": {
+        "operationId": "provision_platform_org_v1_platform_orgs_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlatformOrgProvisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformOrgProvisionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Provision Platform Org",
+        "tags": [
+          "platform-admin"
+        ]
+      }
+    },
+    "/v1/platform/orgs/{org_id}": {
+      "get": {
+        "operationId": "get_platform_org_v1_platform_orgs__org_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformOrgOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Platform Org",
+        "tags": [
+          "platform-admin"
+        ]
+      },
+      "patch": {
+        "operationId": "update_platform_org_v1_platform_orgs__org_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlatformOrgUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformOrgOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Platform Org",
+        "tags": [
+          "platform-admin"
+        ]
+      }
+    },
+    "/v1/platform/support-grants": {
+      "post": {
+        "operationId": "create_support_grant_request_v1_platform_support_grants_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupportGrantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportGrantOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Support Grant Request",
+        "tags": [
+          "platform-admin"
+        ]
+      }
+    },
+    "/v1/platform/usage": {
+      "get": {
+        "operationId": "get_platform_usage_v1_platform_usage_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformUsageOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Platform Usage",
+        "tags": [
+          "platform-admin"
         ]
       }
     },
@@ -8539,6 +9287,154 @@
         "summary": "Patch Rule Route",
         "tags": [
           "rules"
+        ]
+      }
+    },
+    "/v1/support-grants/{grant_id}/approve": {
+      "post": {
+        "operationId": "approve_support_grant_v1_support_grants__grant_id__approve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "grant_id",
+            "required": true,
+            "schema": {
+              "title": "Grant Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportGrantOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Approve Support Grant",
+        "tags": [
+          "support-grants"
+        ]
+      }
+    },
+    "/v1/support-grants/{grant_id}/deny": {
+      "post": {
+        "operationId": "deny_support_grant_v1_support_grants__grant_id__deny_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "grant_id",
+            "required": true,
+            "schema": {
+              "title": "Grant Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportGrantOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Deny Support Grant",
+        "tags": [
+          "support-grants"
         ]
       }
     },

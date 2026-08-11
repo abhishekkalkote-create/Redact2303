@@ -9,7 +9,7 @@ ways for org-scoped services/routers to get a session.
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import get_settings
@@ -74,14 +74,28 @@ async def system_session() -> AsyncGenerator[AsyncSession, None]:
     """`async with system_session() as session:` — declares `app.system_context` (never
     `app.org_id` or `app.user_id`), the ONLY thing that unlocks the additive
     `system_context_select` RLS policy on `organizations` (migration 0011). That policy
-    grants read-only visibility into the org *directory* (which org ids exist) and nothing
-    else — every other tenant table's strict tenant_isolation policy still denies all rows
-    to a session with no `app.org_id` set, same as before.
+    grants read-only visibility into the org *directory* (every organizations row — list
+    or a specific one by id) and nothing else — every other tenant table's strict
+    tenant_isolation policy still denies all rows to a session with no `app.org_id` set,
+    same as before. Writing to a specific org's row still goes through the normal
+    `org_session(org_id)` (its standard policy already permits that).
 
-    Exists for exactly one purpose: internal cron handlers
-    (app/routers/internal_cron.py) that must loop `org_session(org_id)` over every org, and
-    have no other RLS-safe way to learn what "every org" is. Never expose this to anything
-    that isn't that trusted, shared-secret-gated internal path."""
+    Two trusted callers: internal cron handlers (app/routers/internal_cron.py) that must
+    loop `org_session(org_id)` over every org and have no other RLS-safe way to learn what
+    "every org" is, and platform-admin routes (app/routers/platform.py, gated on
+    require_platform_admin) that need to list/read any org's metadata. Never expose this
+    to anything reachable by an ordinary org-scoped request."""
     async with AsyncSessionLocal() as session, session.begin():
         await session.execute(text("SELECT set_config('app.system_context', 'true', true)"))
         yield session
+
+
+async def list_all_org_ids() -> list[str]:
+    """The one RLS-safe way to enumerate every org — see system_session()'s docstring.
+    Shared by app/routers/internal_cron.py and app/services/platform_service.py rather
+    than each defining their own copy."""
+    from app.models.organization import Organization
+
+    async with system_session() as session:
+        result = await session.execute(select(Organization.id))
+        return [row[0] for row in result.all()]

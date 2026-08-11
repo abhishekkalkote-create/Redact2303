@@ -868,6 +868,23 @@ export interface paths {
         patch: operations["patch_member_v1_orgs_current_members__member_id__patch"];
         trace?: never;
     };
+    "/v1/orgs/current/support-grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Support Grants */
+        get: operations["list_support_grants_v1_orgs_current_support_grants_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/orgs/current/webhooks": {
         parameters: {
             query?: never;
@@ -916,6 +933,76 @@ export interface paths {
         };
         /** List Webhook Deliveries */
         get: operations["list_webhook_deliveries_v1_orgs_current_webhooks__subscription_id__deliveries_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/orgs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Platform Orgs */
+        get: operations["list_platform_orgs_v1_platform_orgs_get"];
+        put?: never;
+        /** Provision Platform Org */
+        post: operations["provision_platform_org_v1_platform_orgs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/orgs/{org_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Platform Org */
+        get: operations["get_platform_org_v1_platform_orgs__org_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Platform Org */
+        patch: operations["update_platform_org_v1_platform_orgs__org_id__patch"];
+        trace?: never;
+    };
+    "/v1/platform/support-grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Support Grant Request */
+        post: operations["create_support_grant_request_v1_platform_support_grants_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Platform Usage */
+        get: operations["get_platform_usage_v1_platform_usage_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1139,6 +1226,40 @@ export interface paths {
         head?: never;
         /** Patch Rule Route */
         patch: operations["patch_rule_route_v1_rules__rule_id__patch"];
+        trace?: never;
+    };
+    "/v1/support-grants/{grant_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve Support Grant */
+        post: operations["approve_support_grant_v1_support_grants__grant_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/support-grants/{grant_id}/deny": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Deny Support Grant */
+        post: operations["deny_support_grant_v1_support_grants__grant_id__deny_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/usage/current": {
@@ -1782,6 +1903,109 @@ export interface components {
             /** Seats Included */
             seats_included: number;
         };
+        /** PlatformOrgOut */
+        PlatformOrgOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Jurisdiction State */
+            jurisdiction_state: string;
+            /** Name */
+            name: string;
+            /** Org Type */
+            org_type: string;
+            /** Plan */
+            plan: string;
+            /** Plan Status */
+            plan_status: string;
+            /** Settings */
+            settings: {
+                [key: string]: unknown;
+            };
+            /** Slug */
+            slug: string;
+        };
+        /**
+         * PlatformOrgProvisionRequest
+         * @description specs/09-admin-billing.md § Platform admin: "Org lifecycle: provision
+         *     (sales-assisted)." owner_email is optional — set it to send an immediate
+         *     agency_admin invite; omit it to just create the org shell.
+         */
+        PlatformOrgProvisionRequest: {
+            /** Jurisdiction State */
+            jurisdiction_state: string;
+            /** Name */
+            name: string;
+            /** Org Type */
+            org_type: string;
+            /** Owner Email */
+            owner_email?: string | null;
+            /**
+             * Plan
+             * @default pilot
+             */
+            plan: string;
+        };
+        /** PlatformOrgProvisionResponse */
+        PlatformOrgProvisionResponse: {
+            /** Invite Token */
+            invite_token?: string | null;
+            org: components["schemas"]["PlatformOrgOut"];
+        };
+        /**
+         * PlatformOrgUpdate
+         * @description specs/09-admin-billing.md: "plan/flag/cap overrides, suspend/reactivate."
+         *     plan_status carries suspend/reactivate (set to "suspended"/"active" — see
+         *     app/auth/deps.py's get_org_db suspension gate). page_cap_override is
+         *     platform-admin-only; never exposed on the org-admin-facing OrgSettingsUpdate.
+         */
+        PlatformOrgUpdate: {
+            /** Features */
+            features?: {
+                [key: string]: boolean;
+            } | null;
+            /** Page Cap Override */
+            page_cap_override?: number | null;
+            /** Plan */
+            plan?: string | null;
+            /** Plan Status */
+            plan_status?: string | null;
+        };
+        /** PlatformUsageOrgSummaryOut */
+        PlatformUsageOrgSummaryOut: {
+            /** Documents */
+            documents: number;
+            /** Org Id */
+            org_id: string;
+            /** Org Name */
+            org_name: string;
+            /** Pages Processed */
+            pages_processed: number;
+            /** Plan */
+            plan: string;
+            /** Plan Status */
+            plan_status: string;
+        };
+        /**
+         * PlatformUsageOut
+         * @description Cross-tenant usage rollup for the current period. Deliberately NOT the full
+         *     dashboard specs/09-admin-billing.md describes (MRR, margin/COGS, SLO compliance,
+         *     error/DLQ rates, LLM spend, golden-set accuracy trend) — none of that is
+         *     instrumented anywhere in this codebase yet; this exposes only what usage_records
+         *     actually has.
+         */
+        PlatformUsageOut: {
+            /** Org Count */
+            org_count: number;
+            /** Orgs */
+            orgs: components["schemas"]["PlatformUsageOrgSummaryOut"][];
+            /** Period */
+            period: string;
+        };
         /** PortalRequest */
         PortalRequest: {
             /** Return Url */
@@ -2181,6 +2405,39 @@ export interface components {
             redactions_by_exemption: {
                 [key: string]: number;
             };
+        };
+        /** SupportGrantOut */
+        SupportGrantOut: {
+            /** Decided At */
+            decided_at: string | null;
+            /** Decided By */
+            decided_by: string | null;
+            /** Expires At */
+            expires_at: string | null;
+            /** Id */
+            id: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Org Id */
+            org_id: string;
+            /** Reason */
+            reason: string;
+            /**
+             * Requested At
+             * Format: date-time
+             */
+            requested_at: string;
+            /** Requested By */
+            requested_by: string;
+            /** Status */
+            status: string;
+        };
+        /** SupportGrantRequest */
+        SupportGrantRequest: {
+            /** Org Id */
+            org_id: string;
+            /** Reason */
+            reason: string;
         };
         /** TestBenchMatchOut */
         TestBenchMatchOut: {
@@ -4021,6 +4278,38 @@ export interface operations {
             };
         };
     };
+    list_support_grants_v1_orgs_current_support_grants_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportGrantOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_webhook_subscriptions_v1_orgs_current_webhooks_get: {
         parameters: {
             query?: never;
@@ -4142,6 +4431,208 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WebhookDeliveryOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_platform_orgs_v1_platform_orgs_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformOrgOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    provision_platform_org_v1_platform_orgs_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatformOrgProvisionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformOrgProvisionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_platform_org_v1_platform_orgs__org_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformOrgOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_platform_org_v1_platform_orgs__org_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatformOrgUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformOrgOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_support_grant_request_v1_platform_support_grants_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupportGrantRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportGrantOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_platform_usage_v1_platform_usage_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformUsageOut"];
                 };
             };
             /** @description Validation Error */
@@ -4740,6 +5231,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RuleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_support_grant_v1_support_grants__grant_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                grant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportGrantOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deny_support_grant_v1_support_grants__grant_id__deny_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                grant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportGrantOut"];
                 };
             };
             /** @description Validation Error */

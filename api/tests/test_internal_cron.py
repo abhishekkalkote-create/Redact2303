@@ -5,11 +5,11 @@ rather than calling the handler directly.
 
 app/db/session.py's `engine`/`AsyncSessionLocal` are a module-level singleton bound to
 `settings.database_url` (the dev database per .env, deliberately separate from
-TEST_DATABASE_URL — see conftest.py's module docstring) — the router's own session
-helpers (org_session/system_session) go through that singleton, not the db_session
-fixture. Monkeypatching AsyncSessionLocal to a factory bound to the test engine points
-every org_session()/system_session() call made during a test at the real test database,
-same one db_session itself uses.
+TEST_DATABASE_URL) — the router's own session helpers (org_session/system_session) go
+through that singleton, not the db_session fixture. conftest.py's autouse
+_point_app_db_at_test_database fixture monkeypatches it to the test engine for every
+test, so every org_session()/system_session() call made during a test lands in the real
+test database, same one db_session itself uses.
 """
 
 from datetime import UTC, datetime, timedelta
@@ -18,19 +18,13 @@ from typing import Self
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 
-import app.db.session as db_session_module
 from app.core.config import get_settings
 from app.crypto.envelope import get_cipher
 from app.main import app
 from app.services import webhook_service
 from tests.conftest import set_org
-
-
-@pytest.fixture(autouse=True)
-def _point_app_db_at_test_database(db_engine, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(db_session_module, "AsyncSessionLocal", async_sessionmaker(db_engine, expire_on_commit=False))
 
 
 async def _seed_org_with_pending_retry(session: AsyncSession, org_id: str) -> None:

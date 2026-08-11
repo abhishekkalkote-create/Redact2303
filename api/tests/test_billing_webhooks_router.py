@@ -4,10 +4,9 @@ transition logic itself is covered directly against the real test database in
 test_billing_service.py's _apply_billing_event tests.
 
 app/db/session.py's engine/AsyncSessionLocal are a module-level singleton bound to
-settings.database_url (the dev database, deliberately separate from TEST_DATABASE_URL —
-see conftest.py's module docstring); monkeypatching AsyncSessionLocal points the
-webhook's self-managed org_session() at the real test database instead, same trick as
-test_internal_cron.py.
+settings.database_url (the dev database, deliberately separate from TEST_DATABASE_URL);
+conftest.py's autouse _point_app_db_at_test_database fixture points the webhook's
+self-managed org_session() at the real test database instead.
 """
 
 import json
@@ -15,16 +14,10 @@ import json
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 
-import app.db.session as db_session_module
 from app.main import app
 from tests.conftest import set_org
-
-
-@pytest.fixture(autouse=True)
-def _point_app_db_at_test_database(db_engine, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(db_session_module, "AsyncSessionLocal", async_sessionmaker(db_engine, expire_on_commit=False))
 
 
 @pytest.mark.asyncio

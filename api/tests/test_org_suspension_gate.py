@@ -3,28 +3,23 @@ view/export nothing new)" — enforced once at this shared choke point (see get_
 own docstring for why) rather than retrofitting every router.
 
 Unit-tests the dependency function directly with a hand-built Membership + Request
-rather than going through the full Cognito/dev-auth token flow — nothing in this test
-suite exercises that flow yet (a separate, pre-existing gap, not something this test
-needs to fill). get_org_db manages its own session via org_session(), which goes through
-app/db/session.py's module-level AsyncSessionLocal singleton — same monkeypatch as
-test_internal_cron.py.
+rather than going through the full Cognito/dev-auth token flow (test_platform_admin.py
+uses the real flow via mint_dev_token, for the require_platform_admin boundary). Same
+class of test either way: get_org_db manages its own session via org_session(), which
+goes through app/db/session.py's module-level AsyncSessionLocal singleton —
+conftest.py's autouse _point_app_db_at_test_database fixture points that at the test
+database for every test.
 """
 
 import pytest
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
-import app.db.session as db_session_module
 from app.auth.deps import get_org_db, get_org_db_allow_suspended
 from app.core.errors import ApiError
 from app.models.membership import Membership
 from tests.conftest import set_org
-
-
-@pytest.fixture(autouse=True)
-def _point_app_db_at_test_database(db_engine, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(db_session_module, "AsyncSessionLocal", async_sessionmaker(db_engine, expire_on_commit=False))
 
 
 def _request(method: str) -> Request:

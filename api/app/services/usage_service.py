@@ -27,6 +27,16 @@ def current_billing_period(now: datetime) -> str:
     return now.strftime("%Y-%m")
 
 
+def effective_pages_included(org: Organization) -> int | None:
+    """Platform admin cap override (app/routers/platform.py's PATCH /platform/orgs/{id},
+    stored as org.settings["page_cap_override"] — never settable via the org-admin-facing
+    PATCH /orgs/current) takes precedence over the plan catalog's standard allowance."""
+    override = org.settings.get("page_cap_override")
+    if override is not None:
+        return override
+    return PLAN_CATALOG[org.plan].pages_included
+
+
 def _usage_window_conditions(org_id: str, metric: str, plan: str, now: datetime) -> list:
     """Pilot's cap is cumulative across the whole trial; Starter/Growth reset monthly
     (see app/billing/plans.py's cap_kind). Enterprise/custom has no fixed window at all —
@@ -57,7 +67,7 @@ async def get_usage_current(session: AsyncSession, org: Organization, now: datet
     ).scalar_one()
 
     pages_used = totals_by_metric.get("pages_processed", 0)
-    pages_included = catalog.pages_included
+    pages_included = effective_pages_included(org)
     overage_pages = max(0, pages_used - pages_included) if pages_included is not None else 0
     overage_cost_cents = 0
     if overage_pages and catalog.overage_price_per_100_pages_cents:
@@ -102,18 +112,18 @@ async def check_pilot_page_cap(session: AsyncSession, org: Organization) -> None
     with a clear, structured reason instead of a generic processing failure."""
     if org.plan != "pilot":
         return
-    catalog = PLAN_CATALOG["pilot"]
-    assert catalog.pages_included is not None
+    pages_included = effective_pages_included(org)
+    assert pages_included is not None
     result = await session.execute(
         select(func.coalesce(func.sum(UsageRecord.quantity), 0)).where(
             UsageRecord.org_id == org.id, UsageRecord.metric == "pages_processed"
         )
     )
     pages_used = result.scalar_one()
-    if pages_used >= catalog.pages_included:
+    if pages_used >= pages_included:
         raise ApiError(
             402, "Payment Required",
-            f"Pilot plan page cap reached ({catalog.pages_included} pages) — upgrade to continue processing new documents.",
+            f"Pilot plan page cap reached ({pages_included} pages) — upgrade to continue processing new documents.",
         )
 
 
@@ -167,8 +177,8 @@ async def check_usage_thresholds(session: AsyncSession, org: Organization, now: 
     dedicated column — the fact is already recorded there once a subscription exists;
     orgs with no matching subscription just harmlessly re-check every tick, since
     trigger_event no-ops when nothing is subscribed."""
-    catalog = PLAN_CATALOG[org.plan]
-    if catalog.pages_included is None:
+    pages_included = effective_pages_included(org)
+    if pages_included is None:
         return []
 
     pages_used_result = await session.execute(
@@ -177,7 +187,7 @@ async def check_usage_thresholds(session: AsyncSession, org: Organization, now: 
         )
     )
     pages_used = pages_used_result.scalar_one()
-    usage_ratio = pages_used / catalog.pages_included
+    usage_ratio = pages_used / pages_included
 
     period_start = datetime(now.year, now.month, 1, tzinfo=UTC)
     fired = []
@@ -196,7 +206,7 @@ async def check_usage_thresholds(session: AsyncSession, org: Organization, now: 
             continue
         await trigger_event(
             session, org.id, event_type,
-            {"pages_used": pages_used, "pages_included": catalog.pages_included, "usage_ratio": round(usage_ratio, 4)},
+            {"pages_used": pages_used, "pages_included": pages_included, "usage_ratio": round(usage_ratio, 4)},
         )
         fired.append(event_type)
     return fired

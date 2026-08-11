@@ -22,6 +22,10 @@ DEFAULT_SETTINGS = {
     # baseline" — a conservative default for careful manual redaction review pace,
     # org-overridable via PATCH /orgs/current.
     "manual_minutes_per_page": 5,
+    # specs/09-admin-billing.md § Platform admin "cap overrides" — platform-admin-only
+    # (set via PATCH /platform/orgs/{id}, never exposed on OrgSettingsUpdate/PATCH
+    # /orgs/current). None means "use app/billing/plans.py's standard allowance."
+    "page_cap_override": None,
 }
 
 

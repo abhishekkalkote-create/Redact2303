@@ -12,10 +12,9 @@ non-2xx.
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select
 
 from app.auth.deps import require_internal_cron_secret
-from app.db.session import org_session, system_session
+from app.db.session import list_all_org_ids, org_session
 from app.models.organization import Organization
 from app.services.usage_service import aggregate_and_report_usage, check_usage_thresholds
 from app.services.webhook_service import retry_pending_deliveries
@@ -28,12 +27,6 @@ router = APIRouter(
 )
 
 
-async def _all_org_ids() -> list[str]:
-    async with system_session() as session:
-        result = await session.execute(select(Organization.id))
-        return [row[0] for row in result.all()]
-
-
 @router.post("/webhook-retry")
 async def webhook_retry_tick() -> dict:
     """Closes the Phase 3 gap noted in app/services/webhook_service.py's module
@@ -41,7 +34,7 @@ async def webhook_retry_tick() -> dict:
     until now."""
     now = datetime.now(UTC)
     retried_count = 0
-    for org_id in await _all_org_ids():
+    for org_id in await list_all_org_ids():
         async with org_session(org_id) as session:
             retried_count += len(await retry_pending_deliveries(session, org_id, now))
     return {"deliveries_retried": retried_count}
@@ -53,7 +46,7 @@ async def usage_aggregate_tick() -> dict:
     events.\""""
     now = datetime.now(UTC)
     records_reported = 0
-    for org_id in await _all_org_ids():
+    for org_id in await list_all_org_ids():
         async with org_session(org_id) as session:
             records_reported += await aggregate_and_report_usage(session, org_id, now)
     return {"records_reported": records_reported}
@@ -63,7 +56,7 @@ async def usage_aggregate_tick() -> dict:
 async def usage_threshold_check_tick() -> dict:
     now = datetime.now(UTC)
     events_fired: dict[str, list[str]] = {}
-    for org_id in await _all_org_ids():
+    for org_id in await list_all_org_ids():
         async with org_session(org_id) as session:
             org = await session.get(Organization, org_id)
             if org is None:

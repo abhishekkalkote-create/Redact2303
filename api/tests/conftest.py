@@ -4,12 +4,14 @@ pointed to by TEST_DATABASE_URL, migrated to head before the suite runs (`make t
 
 import os
 
+import pytest
 import pytest_asyncio
 import sqlalchemy as sa
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
+import app.db.session as db_session_module
 from app.seed.starter_rule_packs import get_packs, get_rules, get_versions
 
 TEST_DATABASE_URL = os.environ.get(
@@ -24,6 +26,21 @@ async def db_engine():
     await engine.dispose()
 
 
+@pytest_asyncio.fixture(autouse=True)
+async def _point_app_db_at_test_database(db_engine, monkeypatch: pytest.MonkeyPatch) -> None:
+    """app/db/session.py's engine/AsyncSessionLocal are a module-level singleton bound to
+    `settings.database_url` (the dev database per .env — deliberately separate from
+    TEST_DATABASE_URL, see this file's module docstring). Anything that manages its own
+    session — org_session/user_session/system_session, and everything built on them
+    (get_org_db, get_current_user, create_org, the internal-cron handlers, the webhook
+    router) — goes through that singleton, not the `db_session` fixture. Autouse here so
+    every test transparently points it at the real test database instead, without each
+    test file re-declaring this same fixture (a real duplication that had crept in across
+    test_internal_cron.py, test_org_service.py, test_org_suspension_gate.py, and
+    test_billing_webhooks_router.py before this)."""
+    monkeypatch.setattr(db_session_module, "AsyncSessionLocal", async_sessionmaker(db_engine, expire_on_commit=False))
+
+
 # Tests deliberately open multiple separate `async with session.begin():` blocks (to
 # simulate distinct request transactions with different org contexts) — each one commits
 # immediately, so a single rollback-on-teardown does nothing. TRUNCATE instead: it isn't
@@ -34,7 +51,7 @@ TENANT_TABLES = [
     "redaction_candidates", "manifests", "processing_jobs", "document_pages", "documents",
     "requests", "exemption_codes", "invites", "memberships", "organizations", "users",
     "webhook_deliveries", "webhook_subscriptions", "draft_rules", "manuals",
-    "rules", "rule_set_versions", "rule_packs", "invoices",
+    "rules", "rule_set_versions", "rule_packs", "invoices", "support_grants",
 ]
 
 _RULE_PACKS_TABLE = sa.table(
