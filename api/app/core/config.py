@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     bedrock_enabled: bool = False
     bedrock_model_id: str | None = None
 
+    # app/billing/provider.py — false means "use MockBillingProvider" in local dev (no
+    # Stripe test-mode credentials exist yet).
+    stripe_enabled: bool = False
+
     # app/pipeline/export.py's redaction certificate HMAC — real prod value belongs in
     # Secrets Manager (specs/02-architecture.md), not committed. This placeholder is
     # public and protects nothing.

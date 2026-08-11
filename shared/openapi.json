@@ -446,6 +446,46 @@
         "title": "CertificateVerifyResponse",
         "type": "object"
       },
+      "CheckoutRequest": {
+        "properties": {
+          "cancel_url": {
+            "title": "Cancel Url",
+            "type": "string"
+          },
+          "plan": {
+            "enum": [
+              "starter",
+              "growth"
+            ],
+            "title": "Plan",
+            "type": "string"
+          },
+          "success_url": {
+            "title": "Success Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plan",
+          "success_url",
+          "cancel_url"
+        ],
+        "title": "CheckoutRequest",
+        "type": "object"
+      },
+      "CheckoutResponse": {
+        "properties": {
+          "checkout_url": {
+            "title": "Checkout Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "checkout_url"
+        ],
+        "title": "CheckoutResponse",
+        "type": "object"
+      },
       "DevLoginRequest": {
         "description": "Local-only: mints a dev JWT for an existing (or newly created) user, standing in for\nthe Cognito hosted login flow until a user pool exists.",
         "properties": {
@@ -1528,6 +1568,32 @@
           "has_text_layer"
         ],
         "title": "PageOut",
+        "type": "object"
+      },
+      "PortalRequest": {
+        "properties": {
+          "return_url": {
+            "title": "Return Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "return_url"
+        ],
+        "title": "PortalRequest",
+        "type": "object"
+      },
+      "PortalResponse": {
+        "properties": {
+          "portal_url": {
+            "title": "Portal Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "portal_url"
+        ],
+        "title": "PortalResponse",
         "type": "object"
       },
       "ProcessDocumentRequest": {
@@ -3193,6 +3259,156 @@
         "summary": "Signup",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/v1/billing/checkout": {
+      "post": {
+        "operationId": "create_billing_checkout_v1_billing_checkout_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Billing Checkout",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/v1/billing/portal": {
+      "post": {
+        "operationId": "create_billing_portal_v1_billing_portal_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Billing Portal",
+        "tags": [
+          "billing"
         ]
       }
     },

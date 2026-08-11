@@ -12,6 +12,8 @@ from app.core.errors import (
 from app.routers import (
     audit,
     auth,
+    billing,
+    billing_webhooks,
     dashboard,
     documents,
     exemption_codes,
@@ -54,6 +56,7 @@ app.add_exception_handler(Exception, unhandled_error_handler)
 
 app.include_router(health.router)
 app.include_router(internal_cron.router)
+app.include_router(billing_webhooks.router)
 app.include_router(auth.router, prefix=settings.api_v1_prefix)
 app.include_router(orgs.router, prefix=settings.api_v1_prefix)
 app.include_router(members.router, prefix=settings.api_v1_prefix)
@@ -68,3 +71,4 @@ app.include_router(dashboard.router, prefix=settings.api_v1_prefix)
 app.include_router(webhooks.router, prefix=settings.api_v1_prefix)
 app.include_router(rules.router, prefix=settings.api_v1_prefix)
 app.include_router(manuals.router, prefix=settings.api_v1_prefix)
+app.include_router(billing.router, prefix=settings.api_v1_prefix)

@@ -99,6 +99,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/billing/checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Billing Checkout */
+        post: operations["create_billing_checkout_v1_billing_checkout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/portal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Billing Portal */
+        post: operations["create_billing_portal_v1_billing_portal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/candidates/{candidate_id}": {
         parameters: {
             query?: never;
@@ -1144,6 +1178,23 @@ export interface components {
             /** Valid */
             valid: boolean;
         };
+        /** CheckoutRequest */
+        CheckoutRequest: {
+            /** Cancel Url */
+            cancel_url: string;
+            /**
+             * Plan
+             * @enum {string}
+             */
+            plan: "starter" | "growth";
+            /** Success Url */
+            success_url: string;
+        };
+        /** CheckoutResponse */
+        CheckoutResponse: {
+            /** Checkout Url */
+            checkout_url: string;
+        };
         /**
          * DevLoginRequest
          * @description Local-only: mints a dev JWT for an existing (or newly created) user, standing in for
@@ -1528,6 +1579,16 @@ export interface components {
             rotation: number;
             /** Width */
             width: number;
+        };
+        /** PortalRequest */
+        PortalRequest: {
+            /** Return Url */
+            return_url: string;
+        };
+        /** PortalResponse */
+        PortalResponse: {
+            /** Portal Url */
+            portal_url: string;
         };
         /**
          * ProcessDocumentRequest
@@ -2149,6 +2210,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SignupResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_billing_checkout_v1_billing_checkout_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckoutRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckoutResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_billing_portal_v1_billing_portal_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortalRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalResponse"];
                 };
             };
             /** @description Validation Error */

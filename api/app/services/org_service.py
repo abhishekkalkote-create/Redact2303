@@ -3,6 +3,7 @@ import re
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+from app.billing.provider import get_billing_provider
 from app.core.errors import ConflictError
 from app.core.ids import new_id
 from app.db.session import org_session, user_session
@@ -53,6 +54,11 @@ async def create_org(owner: User, payload: OrgCreate) -> Organization:
     for attempt in range(1, MAX_SLUG_ATTEMPTS + 1):
         slug = base_slug if attempt == 1 else f"{base_slug}-{attempt}"
         org_id = new_id("org")
+        # specs/09-admin-billing.md § Billing mechanics: every org gets a billing customer
+        # up front, not lazily on first checkout — outside the org-scoped transaction below
+        # since it's a call to an external provider (app/billing/provider.py), not a DB write.
+        customer_id = await get_billing_provider().create_customer(org_id, payload.name, owner.email)
+
         try:
             async with org_session(org_id) as org_scoped_session:
                 org = Organization(
@@ -62,6 +68,7 @@ async def create_org(owner: User, payload: OrgCreate) -> Organization:
                     jurisdiction_state=payload.jurisdiction_state.upper(),
                     org_type=payload.org_type,
                     settings=dict(DEFAULT_SETTINGS),
+                    stripe_customer_id=customer_id,
                 )
                 org_scoped_session.add(org)
                 # Flush the org row before adding the membership: without an ORM-level

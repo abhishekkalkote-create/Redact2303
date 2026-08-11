@@ -59,6 +59,10 @@ ACTIONS = frozenset(
         "rule_set_version.tested",
         "webhook.delivered",
         "webhook.delivery_failed",
+        "billing.checkout_completed",
+        "billing.payment_succeeded",
+        "billing.payment_failed",
+        "billing.subscription_canceled",
     }
 )
 
