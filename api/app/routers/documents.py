@@ -24,6 +24,7 @@ from app.pipeline.intake import (
     validate_and_scan,
 )
 from app.pipeline.run import process_document, reprocess_document
+from app.pipeline.sample_document import SAMPLE_DOCUMENT_FILENAME, generate_sample_document_pdf
 from app.schemas.document import (
     BatchRejection,
     BatchUploadResult,
@@ -105,6 +106,50 @@ async def _create_and_process_document(
     except Exception as exc:  # noqa: BLE001 — deliberately broad: any pipeline failure (
         # extraction, detection, storage) must land the document in `error` with an audit
         # trail rather than propagate as an unhandled 500 and leave it stuck mid-pipeline.
+        document.status = "error"
+        document.error = {"message": str(exc)}
+        await write_audit_event(
+            db, org_id=membership.org_id, actor_type="system", actor_id=membership.user_id,
+            action="document.processing_failed", object_type="document", object_id=doc_id,
+            metadata={"error": str(exc)},
+        )
+        await db.flush()
+
+    await db.refresh(document)
+    return document
+
+
+@router.post("/documents/sample", response_model=DocumentOut, status_code=201)
+async def create_sample_document(
+    membership: Membership = Depends(get_membership), db: AsyncSession = Depends(get_org_db)
+) -> Document:
+    """specs/07-ui-spec.md § 1: "optional sample document to try instantly (demo doc
+    processes free, exemplifies exemption citations)." Deliberately not routed through
+    _create_and_process_document: it skips both check_pilot_page_cap and usage billing
+    (process_document's bill_usage=False) — a real upload never gets either exemption."""
+    doc_id = new_id("doc")
+    data = generate_sample_document_pdf()
+    original_key = f"originals/{doc_id}"
+    get_store().put(membership.org_id, original_key, data)
+
+    document = Document(
+        id=doc_id, org_id=membership.org_id, filename=SAMPLE_DOCUMENT_FILENAME,
+        mime_type="application/pdf", source="sample", status="uploaded",
+        uploaded_by=membership.user_id, s3_key_original=original_key,
+        content_sha256=content_sha256(data),
+    )
+    db.add(document)
+    await db.flush()
+    await write_audit_event(
+        db, org_id=membership.org_id, actor_type="user", actor_id=membership.user_id,
+        action="document.uploaded", object_type="document", object_id=doc_id,
+        metadata={"mime_type": "application/pdf", "size_bytes": len(data), "source": "sample"},
+    )
+    await db.flush()
+
+    try:
+        await process_document(db, membership.org_id, doc_id, actor_id=membership.user_id, bill_usage=False)
+    except Exception as exc:  # noqa: BLE001 — same rationale as _create_and_process_document above
         document.status = "error"
         document.error = {"message": str(exc)}
         await write_audit_event(

@@ -12,7 +12,7 @@ DOCUMENT_STATUSES = (
     "in_review", "review_complete", "awaiting_approval", "approved", "exported",
     "error", "deleted",
 )
-DOCUMENT_SOURCES = ("upload", "email", "batch")
+DOCUMENT_SOURCES = ("upload", "email", "batch", "sample")
 
 
 class Document(Base, TimestampMixin):

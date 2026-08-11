@@ -5126,6 +5126,72 @@
         ]
       }
     },
+    "/v1/documents/sample": {
+      "post": {
+        "description": "specs/07-ui-spec.md \u00a7 1: \"optional sample document to try instantly (demo doc\nprocesses free, exemplifies exemption citations).\" Deliberately not routed through\n_create_and_process_document: it skips both check_pilot_page_cap and usage billing\n(process_document's bill_usage=False) \u2014 a real upload never gets either exemption.",
+        "operationId": "create_sample_document_v1_documents_sample_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Sample Document",
+        "tags": [
+          "documents"
+        ]
+      }
+    },
     "/v1/documents/{doc_id}": {
       "get": {
         "operationId": "get_document_v1_documents__doc_id__get",

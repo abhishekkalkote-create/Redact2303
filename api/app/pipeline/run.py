@@ -252,10 +252,13 @@ async def reprocess_document(
     return manifest
 
 
-async def process_document(session: AsyncSession, org_id: str, doc_id: str, actor_id: str) -> Manifest:
+async def process_document(session: AsyncSession, org_id: str, doc_id: str, actor_id: str, bill_usage: bool = True) -> Manifest:
     """`session` must be org-scoped (app.org_id = org_id). Raises on failure — caller is
     responsible for marking the document `error` and writing the failure audit event
-    (see app/routers/documents.py), since only it knows the original exception context."""
+    (see app/routers/documents.py), since only it knows the original exception context.
+
+    bill_usage=False for the onboarding sample document (app/routers/documents.py's
+    POST /documents/sample) — specs/07-ui-spec.md: "demo doc processes free.\""""
     store = get_store()
     document = await session.get(Document, doc_id)
     assert document is not None
@@ -291,7 +294,8 @@ async def process_document(session: AsyncSession, org_id: str, doc_id: str, acto
     extract_job.status = "succeeded"
     extract_job.ended_at = datetime.now(UTC)
     extract_job.metrics = {"pages": len(pages)}
-    await _record_usage(session, org_id, "pages_processed", len(pages), doc_id, extract_job.id)
+    if bill_usage:
+        await _record_usage(session, org_id, "pages_processed", len(pages), doc_id, extract_job.id)
     await session.flush()
 
     document.status = "detecting"
@@ -321,7 +325,7 @@ async def process_document(session: AsyncSession, org_id: str, doc_id: str, acto
         "llm_input_tokens": total_llm_input_tokens,
         "llm_output_tokens": total_llm_output_tokens,
     }
-    if llm_pages_used:
+    if llm_pages_used and bill_usage:
         await _record_usage(session, org_id, "llm_pages", llm_pages_used, doc_id, detect_job.id)
     await session.flush()
 

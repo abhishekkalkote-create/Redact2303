@@ -252,6 +252,36 @@ export default function DashboardPage() {
     enabled: orgQuery.isSuccess,
   });
 
+  // specs/07-ui-spec.md § 1: "land on Dashboard with an 'Upload your first document'
+  // hero + optional sample document to try instantly." Shown only while the org has no
+  // documents at all — an unfiltered list is the simplest reliable "has this org done
+  // anything yet" signal.
+  const documentsQuery = useQuery({
+    queryKey: ["documents", "all"],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/v1/documents", {});
+      if (error) throw error;
+      return data;
+    },
+    enabled: orgQuery.isSuccess,
+  });
+  const isNewOrg = documentsQuery.isSuccess && documentsQuery.data.length === 0;
+
+  const [sampleLoading, setSampleLoading] = useState(false);
+  const [sampleError, setSampleError] = useState<string | null>(null);
+
+  async function handleTrySample() {
+    setSampleError(null);
+    setSampleLoading(true);
+    const { data, error } = await api.POST("/v1/documents/sample", {});
+    setSampleLoading(false);
+    if (error) {
+      setSampleError(problemMessage(error));
+      return;
+    }
+    if (data) router.push(`/documents/${data.id}/review`);
+  }
+
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("reviewer");
   const [inviteToken, setInviteToken] = useState<string | null>(null);
@@ -318,6 +348,38 @@ export default function DashboardPage() {
       </div>
 
       <Separator />
+
+      {isNewOrg && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Getting started</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <p className="text-sm text-neutral-500">
+              This card goes away once you&rsquo;ve processed a document. One optional step in the meantime:
+            </p>
+            <ul className="flex flex-col gap-1.5 text-sm text-neutral-500">
+              <li className="flex items-center gap-2">
+                <input type="checkbox" checked={(membersQuery.data?.length ?? 0) > 1} disabled /> Invite a
+                teammate (skippable)
+              </li>
+            </ul>
+            <div className="flex items-center gap-2">
+              <Link href="/documents" className={buttonVariants({ variant: "default" })}>
+                Upload your first document
+              </Link>
+              <Button variant="outline" onClick={handleTrySample} disabled={sampleLoading}>
+                {sampleLoading ? "Processing sample…" : "Try a sample document instead"}
+              </Button>
+            </div>
+            {sampleError && <p className="text-sm text-red-600">{sampleError}</p>}
+            <p className="text-xs text-neutral-500">
+              The sample document is a fictional incident report shaped to show a few different exemption
+              codes — processing it never counts against your plan&rsquo;s usage.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <QueueDashboard />
 
