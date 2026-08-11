@@ -39,6 +39,9 @@ class Document(Base, TimestampMixin):
     content_sha256: Mapped[str | None] = mapped_column(String, nullable=True)
     error: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # specs/08-security-compliance.md: "Legal-hold flag per document/request suspends
+    # deletion." Read by Phase 5's retention-sweep cron handler; not yet enforced anywhere.
+    legal_hold: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 
 class DocumentPage(Base, TimestampMixin):

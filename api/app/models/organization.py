@@ -15,6 +15,9 @@ DEFAULT_SETTINGS = {
     "retention_days_exports": 2555,  # 7 years
     "features": {},
     "export_defaults": {"clean_pdf": True, "annotated_pdf": False, "exemption_log": True},
+    # specs/08-security-compliance.md: "org policy can enforce MFA (default ON for new orgs)."
+    "mfa_enforced": True,
+    "session_length_minutes": 60,
 }
 
 

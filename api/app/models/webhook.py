@@ -9,9 +9,17 @@ from app.db.base import Base, TimestampMixin
 SUBSCRIPTION_STATUSES = ("active", "disabled")
 DELIVERY_STATUSES = ("pending", "success", "failed", "dead")
 
-# specs/04-api-spec.md: Phase 3 fires these two; export.integrity_failed and
-# usage.threshold_80/95 are specced but wait on Phase 5's metering/plan-allowance work.
-SUPPORTED_EVENTS = ("document.ready_for_review", "document.exported")
+# specs/04-api-spec.md. Phase 3 fires the first two; export.integrity_failed and the two
+# usage.threshold_* events are now valid subscription events (Phase 5 slice 1: data model
+# only) but nothing fires them yet — that's Phase 5's usage-threshold-check cron handler
+# and the export integrity verifier's failure path, respectively.
+SUPPORTED_EVENTS = (
+    "document.ready_for_review",
+    "document.exported",
+    "export.integrity_failed",
+    "usage.threshold_80",
+    "usage.threshold_95",
+)
 
 
 class WebhookSubscription(Base, TimestampMixin):

@@ -34,7 +34,7 @@ TENANT_TABLES = [
     "redaction_candidates", "manifests", "processing_jobs", "document_pages", "documents",
     "requests", "exemption_codes", "invites", "memberships", "organizations", "users",
     "webhook_deliveries", "webhook_subscriptions", "draft_rules", "manuals",
-    "rules", "rule_set_versions", "rule_packs",
+    "rules", "rule_set_versions", "rule_packs", "invoices",
 ]
 
 _RULE_PACKS_TABLE = sa.table(

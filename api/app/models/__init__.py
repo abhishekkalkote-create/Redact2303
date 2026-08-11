@@ -3,6 +3,7 @@ from app.models.document import Document, DocumentPage
 from app.models.exemption_code import ExemptionCode, ExemptionLibrary
 from app.models.export_artifact import ExportArtifact
 from app.models.invite import Invite
+from app.models.invoice import Invoice
 from app.models.manifest import Manifest
 from app.models.manual import DraftRule, Manual
 from app.models.membership import Membership
@@ -26,6 +27,7 @@ __all__ = [
     "ExemptionLibrary",
     "ExportArtifact",
     "Invite",
+    "Invoice",
     "Manifest",
     "Manual",
     "Membership",

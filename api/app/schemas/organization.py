@@ -17,6 +17,8 @@ class OrgSettingsUpdate(BaseModel):
     retention_days_uploads: int | None = None
     retention_days_exports: int | None = None
     export_defaults: dict | None = None
+    mfa_enforced: bool | None = None
+    session_length_minutes: int | None = None
 
 
 class OrgOut(BaseModel):
