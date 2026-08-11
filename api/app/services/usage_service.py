@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.billing.plans import PLAN_CATALOG
 from app.billing.provider import get_billing_provider
+from app.core.errors import ApiError
 from app.models.document import Document
 from app.models.membership import Membership
 from app.models.organization import Organization
@@ -88,6 +89,32 @@ async def get_usage_current(session: AsyncSession, org: Organization, now: datet
         "overage_cost_cents": overage_cost_cents,
         "per_user_breakdown": per_user_breakdown,
     }
+
+
+async def check_pilot_page_cap(session: AsyncSession, org: Organization) -> None:
+    """specs/09-admin-billing.md: Pilot's overage is "Hard cap (upgrade prompt)" — the
+    only plan where new processing is blocked outright rather than soft-continuing with a
+    bill (every paid tier bills overage instead — see get_usage_current/
+    aggregate_and_report_usage). Checked against CURRENT cumulative usage, not the
+    incoming document's own page count (unknowable before extraction runs) — this blocks
+    the NEXT document once the org is already at/over cap, rather than blocking mid-file.
+    Raises ApiError(402) so the caller (app/routers/documents.py) can mark the document
+    with a clear, structured reason instead of a generic processing failure."""
+    if org.plan != "pilot":
+        return
+    catalog = PLAN_CATALOG["pilot"]
+    assert catalog.pages_included is not None
+    result = await session.execute(
+        select(func.coalesce(func.sum(UsageRecord.quantity), 0)).where(
+            UsageRecord.org_id == org.id, UsageRecord.metric == "pages_processed"
+        )
+    )
+    pages_used = result.scalar_one()
+    if pages_used >= catalog.pages_included:
+        raise ApiError(
+            402, "Payment Required",
+            f"Pilot plan page cap reached ({catalog.pages_included} pages) — upgrade to continue processing new documents.",
+        )
 
 
 async def list_usage_records(session: AsyncSession, org_id: str, period: str | None) -> list[UsageRecord]:

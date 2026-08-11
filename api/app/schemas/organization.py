@@ -19,6 +19,7 @@ class OrgSettingsUpdate(BaseModel):
     export_defaults: dict | None = None
     mfa_enforced: bool | None = None
     session_length_minutes: int | None = None
+    manual_minutes_per_page: int | None = None
 
 
 class OrgOut(BaseModel):

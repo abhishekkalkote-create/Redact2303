@@ -18,6 +18,10 @@ DEFAULT_SETTINGS = {
     # specs/08-security-compliance.md: "org policy can enforce MFA (default ON for new orgs)."
     "mfa_enforced": True,
     "session_length_minutes": 60,
+    # specs/01-product-spec.md § Pilot playbook: "est. hours saved @ configurable manual
+    # baseline" — a conservative default for careful manual redaction review pace,
+    # org-overridable via PATCH /orgs/current.
+    "manual_minutes_per_page": 5,
 }
 
 

@@ -10,11 +10,13 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import ApiError
 from app.core.ids import new_id
 from app.models.organization import Organization
 from app.services import webhook_service
 from app.services.usage_service import (
     aggregate_and_report_usage,
+    check_pilot_page_cap,
     check_usage_thresholds,
     get_usage_current,
     list_usage_records,
@@ -272,3 +274,51 @@ async def test_check_usage_thresholds_skips_custom_allowance_plans(db_session: A
         assert org is not None
         fired = await check_usage_thresholds(db_session, org, now)
     assert fired == []
+
+
+@pytest.mark.asyncio
+async def test_check_pilot_page_cap_allows_processing_under_the_cap(db_session: AsyncSession) -> None:
+    org_id = "org_pilot_cap_ok"
+    async with db_session.begin():
+        await _create_org(db_session, org_id, plan="pilot")
+        await _insert_usage_records(db_session, [_usage_record(org_id, metric="pages_processed", quantity=999, period="2026-08")])
+
+    async with db_session.begin():
+        await set_org(db_session, org_id)
+        org = await db_session.get(Organization, org_id)
+        assert org is not None
+        await check_pilot_page_cap(db_session, org)  # must not raise
+
+
+@pytest.mark.asyncio
+async def test_check_pilot_page_cap_blocks_processing_at_the_cap(db_session: AsyncSession) -> None:
+    org_id = "org_pilot_cap_hit"
+    async with db_session.begin():
+        await _create_org(db_session, org_id, plan="pilot")
+        await _insert_usage_records(db_session, [_usage_record(org_id, metric="pages_processed", quantity=1000, period="2026-08")])
+
+    async with db_session.begin():
+        await set_org(db_session, org_id)
+        org = await db_session.get(Organization, org_id)
+        assert org is not None
+        with pytest.raises(ApiError) as exc_info:
+            await check_pilot_page_cap(db_session, org)
+    assert exc_info.value.status_code == 402
+
+
+@pytest.mark.asyncio
+async def test_check_pilot_page_cap_never_blocks_paid_plans(db_session: AsyncSession) -> None:
+    """specs/09-admin-billing.md: every paid tier soft-continues and bills overage
+    instead — only Pilot hard-blocks."""
+    org_id = "org_pilot_cap_paid"
+    async with db_session.begin():
+        await _create_org(db_session, org_id, plan="growth")
+        await _insert_usage_records(
+            db_session, [_usage_record(org_id, metric="pages_processed", quantity=50_000, period="2026-08")]
+        )
+
+    async with db_session.begin():
+        await set_org(db_session, org_id)
+        org = await db_session.get(Organization, org_id)
+        assert org is not None
+        await check_pilot_page_cap(db_session, org)  # must not raise

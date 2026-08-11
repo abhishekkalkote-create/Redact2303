@@ -3,13 +3,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.deps import get_membership, get_org_db, require_role
-from app.core.errors import NotFoundError
+from app.core.errors import ApiError, NotFoundError
 from app.core.ids import new_id
 from app.crypto.envelope import get_cipher
 from app.models.document import Document, DocumentPage
 from app.models.exemption_code import ExemptionCode
 from app.models.manifest import Manifest
 from app.models.membership import Membership
+from app.models.organization import Organization
 from app.models.redaction_candidate import RedactionCandidate
 from app.pipeline.email_intake import (
     is_eml_mime,
@@ -42,6 +43,7 @@ from app.schemas.request import RequestCreate, RequestOut
 from app.services.audit_service import write_audit_event
 from app.services.document_service import list_documents as list_documents_query
 from app.services.request_service import create_request
+from app.services.usage_service import check_pilot_page_cap
 from app.storage import get_store
 
 router = APIRouter(tags=["documents"])
@@ -76,6 +78,26 @@ async def _create_and_process_document(
         metadata={"mime_type": mime_type, "size_bytes": len(data)},
     )
     await db.flush()
+
+    org = await db.get(Organization, membership.org_id)
+    assert org is not None, f"membership {membership.id} references a missing org"
+    try:
+        await check_pilot_page_cap(db, org)
+    except ApiError as exc:
+        # specs/09-admin-billing.md: Pilot's page cap blocks NEW processing outright
+        # (upgrade prompt), unlike a paid tier's soft-continue-and-bill overage — a
+        # distinct, structured reason (`code`) rather than the generic pipeline-failure
+        # path below, so the frontend can render an upgrade CTA instead of an error toast.
+        document.status = "error"
+        document.error = {"code": "plan_cap_exceeded", "message": exc.detail}
+        await write_audit_event(
+            db, org_id=membership.org_id, actor_type="system", actor_id=membership.user_id,
+            action="document.processing_failed", object_type="document", object_id=doc_id,
+            metadata={"error": exc.detail, "code": "plan_cap_exceeded"},
+        )
+        await db.flush()
+        await db.refresh(document)
+        return document
 
     try:
         await process_document(db, membership.org_id, doc_id, actor_id=membership.user_id)

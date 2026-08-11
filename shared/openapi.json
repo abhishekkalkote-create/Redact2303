@@ -1475,6 +1475,7 @@
                 "exemption_log": true
               },
               "features": {},
+              "manual_minutes_per_page": 5,
               "mfa_enforced": true,
               "retention_days_exports": 2555,
               "retention_days_uploads": 90,
@@ -1538,6 +1539,17 @@
               }
             ],
             "title": "Export Defaults"
+          },
+          "manual_minutes_per_page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manual Minutes Per Page"
           },
           "mfa_enforced": {
             "anyOf": [
@@ -1687,6 +1699,71 @@
           "pages_included"
         ],
         "title": "PlanCardOut",
+        "type": "object"
+      },
+      "PlanCatalogEntryOut": {
+        "description": "specs/09-admin-billing.md \u00a7 Plans \u2014 the published pricing table, verbatim from\napp/billing/plans.py. Backs the pilot cap banner's \"equivalent value at Growth\npricing\" framing as well as (later) the marketing pricing page.",
+        "properties": {
+          "cap_kind": {
+            "title": "Cap Kind",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "overage_price_per_100_pages_cents": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overage Price Per 100 Pages Cents"
+          },
+          "pages_included": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pages Included"
+          },
+          "price_cents_per_month": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Cents Per Month"
+          },
+          "seats_included": {
+            "title": "Seats Included",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "seats_included",
+          "cap_kind",
+          "pages_included",
+          "price_cents_per_month",
+          "overage_price_per_100_pages_cents"
+        ],
+        "title": "PlanCatalogEntryOut",
         "type": "object"
       },
       "PortalRequest": {
@@ -2782,6 +2859,48 @@
         "title": "SignupResponse",
         "type": "object"
       },
+      "SuccessMetricsOut": {
+        "description": "specs/01-product-spec.md \u00a7 Pilot playbook success-metrics widget. Cumulative\nsince org creation \u2014 see app/services/pilot_service.py.",
+        "properties": {
+          "conversion_prompt_due": {
+            "title": "Conversion Prompt Due",
+            "type": "boolean"
+          },
+          "days_since_created": {
+            "title": "Days Since Created",
+            "type": "integer"
+          },
+          "est_hours_saved": {
+            "title": "Est Hours Saved",
+            "type": "number"
+          },
+          "manual_minutes_per_page": {
+            "title": "Manual Minutes Per Page",
+            "type": "integer"
+          },
+          "pages_processed": {
+            "title": "Pages Processed",
+            "type": "integer"
+          },
+          "redactions_by_exemption": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Redactions By Exemption",
+            "type": "object"
+          }
+        },
+        "required": [
+          "pages_processed",
+          "manual_minutes_per_page",
+          "est_hours_saved",
+          "redactions_by_exemption",
+          "days_since_created",
+          "conversion_prompt_due"
+        ],
+        "title": "SuccessMetricsOut",
+        "type": "object"
+      },
       "TestBenchMatchOut": {
         "properties": {
           "document_id": {
@@ -3666,6 +3785,76 @@
         ]
       }
     },
+    "/v1/billing/plans": {
+      "get": {
+        "description": "Published pricing (specs/09-admin-billing.md) \u2014 static, not org-specific; gated\non being an authenticated member of some org, nothing more.",
+        "operationId": "list_billing_plan_catalog_v1_billing_plans_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PlanCatalogEntryOut"
+                  },
+                  "title": "Response List Billing Plan Catalog V1 Billing Plans Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Billing Plan Catalog",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
     "/v1/billing/portal": {
       "post": {
         "operationId": "create_billing_portal_v1_billing_portal_post",
@@ -3736,6 +3925,135 @@
           }
         },
         "summary": "Create Billing Portal",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/v1/billing/roi-summary": {
+      "get": {
+        "description": "specs/01-product-spec.md \u00a7 Pilot playbook: \"export-able one-page ROI summary\n(PDF) the champion can hand to their director.\" Not gated to Pilot orgs specifically\n\u2014 the same numbers are meaningful on any plan.",
+        "operationId": "get_billing_roi_summary_v1_billing_roi_summary_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Billing Roi Summary",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/v1/billing/success-metrics": {
+      "get": {
+        "operationId": "get_billing_success_metrics_v1_billing_success_metrics_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessMetricsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Billing Success Metrics",
         "tags": [
           "billing"
         ]

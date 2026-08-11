@@ -6,7 +6,7 @@ vendor SDK directly.
 
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,10 +20,13 @@ from app.schemas.billing import (
     CheckoutResponse,
     InvoiceOut,
     PlanCardOut,
+    PlanCatalogEntryOut,
     PortalRequest,
     PortalResponse,
+    SuccessMetricsOut,
 )
 from app.services.billing_service import create_checkout_session, create_portal_session
+from app.services.pilot_service import generate_roi_summary_pdf, get_success_metrics
 from app.services.usage_service import get_usage_current
 
 router = APIRouter(tags=["billing"])
@@ -77,3 +80,42 @@ async def get_billing_plan(
 async def list_billing_invoices(db: AsyncSession = Depends(get_org_db)) -> list[Invoice]:
     result = await db.execute(select(Invoice).order_by(Invoice.created_at.desc()))
     return list(result.scalars().all())
+
+
+@router.get("/billing/plans", response_model=list[PlanCatalogEntryOut])
+async def list_billing_plan_catalog(_membership: Membership = Depends(get_membership)) -> list[PlanCatalogEntryOut]:
+    """Published pricing (specs/09-admin-billing.md) — static, not org-specific; gated
+    on being an authenticated member of some org, nothing more."""
+    return [
+        PlanCatalogEntryOut(
+            key=key, name=entry.name, seats_included=entry.seats_included, cap_kind=entry.cap_kind,
+            pages_included=entry.pages_included, price_cents_per_month=entry.price_cents_per_month,
+            overage_price_per_100_pages_cents=entry.overage_price_per_100_pages_cents,
+        )
+        for key, entry in PLAN_CATALOG.items()
+    ]
+
+
+@router.get("/billing/success-metrics", response_model=SuccessMetricsOut)
+async def get_billing_success_metrics(
+    membership: Membership = Depends(get_membership), db: AsyncSession = Depends(get_org_db)
+) -> SuccessMetricsOut:
+    org = await _get_current_org(db, membership)
+    return SuccessMetricsOut(**await get_success_metrics(db, org, datetime.now(UTC)))
+
+
+@router.get("/billing/roi-summary")
+async def get_billing_roi_summary(
+    membership: Membership = Depends(get_membership), db: AsyncSession = Depends(get_org_db)
+) -> Response:
+    """specs/01-product-spec.md § Pilot playbook: "export-able one-page ROI summary
+    (PDF) the champion can hand to their director." Not gated to Pilot orgs specifically
+    — the same numbers are meaningful on any plan."""
+    org = await _get_current_org(db, membership)
+    now = datetime.now(UTC)
+    metrics = await get_success_metrics(db, org, now)
+    pdf_bytes = generate_roi_summary_pdf(org.name, metrics, now)
+    return Response(
+        content=pdf_bytes, media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=roi-summary.pdf"},
+    )

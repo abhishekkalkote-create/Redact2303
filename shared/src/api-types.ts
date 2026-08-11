@@ -150,6 +150,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/billing/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Billing Plan Catalog
+         * @description Published pricing (specs/09-admin-billing.md) — static, not org-specific; gated
+         *     on being an authenticated member of some org, nothing more.
+         */
+        get: operations["list_billing_plan_catalog_v1_billing_plans_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/billing/portal": {
         parameters: {
             query?: never;
@@ -161,6 +182,45 @@ export interface paths {
         put?: never;
         /** Create Billing Portal */
         post: operations["create_billing_portal_v1_billing_portal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/roi-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Billing Roi Summary
+         * @description specs/01-product-spec.md § Pilot playbook: "export-able one-page ROI summary
+         *     (PDF) the champion can hand to their director." Not gated to Pilot orgs specifically
+         *     — the same numbers are meaningful on any plan.
+         */
+        get: operations["get_billing_roi_summary_v1_billing_roi_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/success-metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Billing Success Metrics */
+        get: operations["get_billing_success_metrics_v1_billing_success_metrics_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1624,6 +1684,7 @@ export interface components {
              *         "exemption_log": true
              *       },
              *       "features": {},
+             *       "manual_minutes_per_page": 5,
              *       "mfa_enforced": true,
              *       "retention_days_exports": 2555,
              *       "retention_days_uploads": 90,
@@ -1646,6 +1707,8 @@ export interface components {
             export_defaults?: {
                 [key: string]: unknown;
             } | null;
+            /** Manual Minutes Per Page */
+            manual_minutes_per_page?: number | null;
             /** Mfa Enforced */
             mfa_enforced?: boolean | null;
             /** Retention Days Exports */
@@ -1694,6 +1757,28 @@ export interface components {
             plan_status: string;
             /** Seats Active */
             seats_active: number;
+            /** Seats Included */
+            seats_included: number;
+        };
+        /**
+         * PlanCatalogEntryOut
+         * @description specs/09-admin-billing.md § Plans — the published pricing table, verbatim from
+         *     app/billing/plans.py. Backs the pilot cap banner's "equivalent value at Growth
+         *     pricing" framing as well as (later) the marketing pricing page.
+         */
+        PlanCatalogEntryOut: {
+            /** Cap Kind */
+            cap_kind: string;
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Overage Price Per 100 Pages Cents */
+            overage_price_per_100_pages_cents: number | null;
+            /** Pages Included */
+            pages_included: number | null;
+            /** Price Cents Per Month */
+            price_cents_per_month: number | null;
             /** Seats Included */
             seats_included: number;
         };
@@ -2075,6 +2160,27 @@ export interface components {
             user_id: string;
             /** Verification Required */
             verification_required: boolean;
+        };
+        /**
+         * SuccessMetricsOut
+         * @description specs/01-product-spec.md § Pilot playbook success-metrics widget. Cumulative
+         *     since org creation — see app/services/pilot_service.py.
+         */
+        SuccessMetricsOut: {
+            /** Conversion Prompt Due */
+            conversion_prompt_due: boolean;
+            /** Days Since Created */
+            days_since_created: number;
+            /** Est Hours Saved */
+            est_hours_saved: number;
+            /** Manual Minutes Per Page */
+            manual_minutes_per_page: number;
+            /** Pages Processed */
+            pages_processed: number;
+            /** Redactions By Exemption */
+            redactions_by_exemption: {
+                [key: string]: number;
+            };
         };
         /** TestBenchMatchOut */
         TestBenchMatchOut: {
@@ -2467,6 +2573,38 @@ export interface operations {
             };
         };
     };
+    list_billing_plan_catalog_v1_billing_plans_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanCatalogEntryOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_billing_portal_v1_billing_portal_post: {
         parameters: {
             query?: never;
@@ -2490,6 +2628,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PortalResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_billing_roi_summary_v1_billing_roi_summary_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_billing_success_metrics_v1_billing_success_metrics_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuccessMetricsOut"];
                 };
             };
             /** @description Validation Error */
