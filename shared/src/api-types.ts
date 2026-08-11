@@ -1017,6 +1017,47 @@ export interface paths {
         patch: operations["update_platform_org_v1_platform_orgs__org_id__patch"];
         trace?: never;
     };
+    "/v1/platform/orgs/{org_id}/destruction-attestation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Platform Org Destruction Attestation */
+        get: operations["get_platform_org_destruction_attestation_v1_platform_orgs__org_id__destruction_attestation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/orgs/{org_id}/offboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Offboard Platform Org
+         * @description specs/08-security-compliance.md § Data lifecycle: "full export package
+         *     (documents, manifests, audit CSV) then destruction with attestation." Returns the
+         *     export package as the response body — capture it now, since the destructive purge
+         *     already happened by the time this responds. The attestation PDF is a separate GET
+         *     (below), generated on demand from this action's own audit event.
+         */
+        post: operations["offboard_platform_org_v1_platform_orgs__org_id__offboard_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/platform/support-grants": {
         parameters: {
             query?: never;
@@ -1841,6 +1882,17 @@ export interface components {
             prompt_version: string;
             /** Proposals */
             proposals: components["schemas"]["ProposedRuleChangeOut"][];
+        };
+        /**
+         * OffboardOrgRequest
+         * @description specs/08-security-compliance.md § Data lifecycle: org offboarding. confirm_slug
+         *     must match the organization's actual slug — a cheap guard against offboarding the
+         *     wrong org by a mistyped id, on top of an action that's already platform-admin-only
+         *     and fully audited.
+         */
+        OffboardOrgRequest: {
+            /** Confirm Slug */
+            confirm_slug: string;
         };
         /** OrgCreate */
         OrgCreate: {
@@ -4757,6 +4809,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlatformOrgOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_platform_org_destruction_attestation_v1_platform_orgs__org_id__destruction_attestation_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    offboard_platform_org_v1_platform_orgs__org_id__offboard_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OffboardOrgRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

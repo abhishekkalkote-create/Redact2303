@@ -10,12 +10,13 @@ uses the same generated TS client as any other page.
 
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 
 from app.auth.deps import require_platform_admin
 from app.core.errors import NotFoundError
 from app.models.user import User
 from app.schemas.platform import (
+    OffboardOrgRequest,
     PlatformOrgOut,
     PlatformOrgProvisionRequest,
     PlatformOrgProvisionResponse,
@@ -23,6 +24,11 @@ from app.schemas.platform import (
     PlatformUsageOut,
 )
 from app.schemas.support_grant import SupportGrantOut, SupportGrantRequest
+from app.services.offboarding_service import (
+    generate_destruction_attestation_pdf,
+    get_destruction_attestation_facts,
+    offboard_org,
+)
 from app.services.platform_service import (
     get_cross_tenant_usage,
     get_org_for_platform,
@@ -79,3 +85,29 @@ async def create_support_grant_request(
 ) -> SupportGrantOut:
     grant = await request_grant(admin.id, payload.org_id, payload.reason)
     return SupportGrantOut.from_support_grant(grant)
+
+
+@router.post("/orgs/{org_id}/offboard")
+async def offboard_platform_org(
+    org_id: str, payload: OffboardOrgRequest, admin: User = Depends(require_platform_admin)
+) -> Response:
+    """specs/08-security-compliance.md § Data lifecycle: "full export package
+    (documents, manifests, audit CSV) then destruction with attestation." Returns the
+    export package as the response body — capture it now, since the destructive purge
+    already happened by the time this responds. The attestation PDF is a separate GET
+    (below), generated on demand from this action's own audit event."""
+    package, _documents_purged = await offboard_org(admin.id, org_id, payload.confirm_slug, datetime.now(UTC))
+    return Response(
+        content=package, media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename=offboarding-package-{org_id}.zip"},
+    )
+
+
+@router.get("/orgs/{org_id}/destruction-attestation")
+async def get_platform_org_destruction_attestation(org_id: str) -> Response:
+    facts = await get_destruction_attestation_facts(org_id)
+    pdf_bytes = generate_destruction_attestation_pdf(facts)
+    return Response(
+        content=pdf_bytes, media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=destruction-attestation-{org_id}.pdf"},
+    )

@@ -1424,6 +1424,20 @@
         "title": "NlEditResponse",
         "type": "object"
       },
+      "OffboardOrgRequest": {
+        "description": "specs/08-security-compliance.md \u00a7 Data lifecycle: org offboarding. confirm_slug\nmust match the organization's actual slug \u2014 a cheap guard against offboarding the\nwrong org by a mistyped id, on top of an action that's already platform-admin-only\nand fully audited.",
+        "properties": {
+          "confirm_slug": {
+            "title": "Confirm Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "confirm_slug"
+        ],
+        "title": "OffboardOrgRequest",
+        "type": "object"
+      },
       "OrgCreate": {
         "properties": {
           "est_monthly_pages": {
@@ -8161,6 +8175,129 @@
           }
         },
         "summary": "Update Platform Org",
+        "tags": [
+          "platform-admin"
+        ]
+      }
+    },
+    "/v1/platform/orgs/{org_id}/destruction-attestation": {
+      "get": {
+        "operationId": "get_platform_org_destruction_attestation_v1_platform_orgs__org_id__destruction_attestation_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Platform Org Destruction Attestation",
+        "tags": [
+          "platform-admin"
+        ]
+      }
+    },
+    "/v1/platform/orgs/{org_id}/offboard": {
+      "post": {
+        "description": "specs/08-security-compliance.md \u00a7 Data lifecycle: \"full export package\n(documents, manifests, audit CSV) then destruction with attestation.\" Returns the\nexport package as the response body \u2014 capture it now, since the destructive purge\nalready happened by the time this responds. The attestation PDF is a separate GET\n(below), generated on demand from this action's own audit event.",
+        "operationId": "offboard_platform_org_v1_platform_orgs__org_id__offboard_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "title": "Org Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OffboardOrgRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Offboard Platform Org",
         "tags": [
           "platform-admin"
         ]

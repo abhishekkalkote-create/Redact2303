@@ -73,6 +73,7 @@ ACTIONS = frozenset(
         "request.legal_hold_set",
         "request.legal_hold_cleared",
         "document.retention_purged",
+        "platform.org_offboarded",
     }
 )
 

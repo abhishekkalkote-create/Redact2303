@@ -5,13 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.deps import get_membership, get_org_db, require_role
 from app.core.errors import ApiError, NotFoundError
 from app.core.ids import new_id
-from app.crypto.envelope import get_cipher
 from app.models.document import Document, DocumentPage
-from app.models.exemption_code import ExemptionCode
-from app.models.manifest import Manifest
 from app.models.membership import Membership
 from app.models.organization import Organization
-from app.models.redaction_candidate import RedactionCandidate
 from app.pipeline.email_intake import (
     is_eml_mime,
     is_msg_container_mime,
@@ -31,8 +27,6 @@ from app.pipeline.run import process_document, reprocess_document
 from app.schemas.document import (
     BatchRejection,
     BatchUploadResult,
-    BBox,
-    CandidateOut,
     DocumentAssignPatch,
     DocumentOut,
     ManifestOut,
@@ -42,6 +36,7 @@ from app.schemas.document import (
 from app.schemas.legal_hold import LegalHoldRequest
 from app.schemas.request import RequestCreate, RequestOut
 from app.services.audit_service import write_audit_event
+from app.services.document_service import get_manifest_data
 from app.services.document_service import list_documents as list_documents_query
 from app.services.legal_hold_service import clear_document_legal_hold, set_document_legal_hold
 from app.services.request_service import create_request
@@ -314,33 +309,7 @@ async def process_document_route(
 
 @router.get("/documents/{doc_id}/manifest", response_model=ManifestOut)
 async def get_manifest(doc_id: str, db: AsyncSession = Depends(get_org_db)) -> ManifestOut:
-    manifest = (await db.execute(select(Manifest).where(Manifest.doc_id == doc_id))).scalars().first()
-    if manifest is None:
-        raise NotFoundError("Manifest not found (document may still be processing)")
-
-    result = await db.execute(
-        select(RedactionCandidate, ExemptionCode.code)
-        .outerjoin(ExemptionCode, RedactionCandidate.exemption_code_id == ExemptionCode.id)
-        .where(RedactionCandidate.doc_id == doc_id)
-        .order_by(RedactionCandidate.page_no, RedactionCandidate.id)
-    )
-    cipher = get_cipher()
-    candidates = [
-        CandidateOut(
-            id=c.id, page_no=c.page_no, bbox=BBox(**c.bbox),
-            display_text=cipher.decrypt(manifest.org_id, c.display_text_encrypted),
-            origin=c.origin, source_rule_key=c.source_rule_key,
-            exemption_code_id=c.exemption_code_id, exemption_code=code,
-            ai_justification=c.ai_justification, confidence=c.confidence, state=c.state,
-            recurrence_group_id=c.recurrence_group_id,
-            escalated_at=c.escalated_at, escalated_note=c.escalated_note,
-        )
-        for c, code in result.all()
-    ]
-    return ManifestOut(
-        doc_id=doc_id, version=manifest.version, schema_version=manifest.schema_version,
-        completeness=manifest.completeness, candidates=candidates,
-    )
+    return ManifestOut(**await get_manifest_data(db, doc_id))
 
 
 @router.get("/documents/{doc_id}/pages", response_model=list[PageOut])

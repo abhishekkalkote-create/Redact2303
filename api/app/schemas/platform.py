@@ -65,3 +65,12 @@ class PlatformUsageOut(BaseModel):
     period: str
     org_count: int
     orgs: list[PlatformUsageOrgSummaryOut]
+
+
+class OffboardOrgRequest(BaseModel):
+    """specs/08-security-compliance.md § Data lifecycle: org offboarding. confirm_slug
+    must match the organization's actual slug — a cheap guard against offboarding the
+    wrong org by a mistyped id, on top of an action that's already platform-admin-only
+    and fully audited."""
+
+    confirm_slug: str
