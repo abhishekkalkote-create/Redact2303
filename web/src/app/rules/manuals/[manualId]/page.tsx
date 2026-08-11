@@ -230,7 +230,7 @@ export default function ManualDraftRulesPage() {
   const decided = (draftsQuery.data ?? []).filter((d) => d.status !== "pending");
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-8">
+    <main id="main-content" className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">{manual?.filename ?? "Manual"}</h1>

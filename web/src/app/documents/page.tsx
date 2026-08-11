@@ -67,7 +67,7 @@ export default function DocumentsPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-8">
+    <main id="main-content" className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Documents</h1>
         <div className="flex items-center gap-2">
@@ -90,9 +90,9 @@ export default function DocumentsPage() {
         Accepts PDF, ZIP of PDFs, and .eml/.msg. For Word/Excel/PowerPoint files, export
         to PDF from that application first, then upload the PDF.
       </p>
-      {uploadError && <p className="text-sm text-red-600">{uploadError}</p>}
+      {uploadError && <p role="alert" className="text-sm text-red-600">{uploadError}</p>}
       {rejectedEntries.length > 0 && (
-        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+        <div role="status" aria-live="polite" className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
           <p className="font-medium">{rejectedEntries.length} file(s) in the ZIP were skipped:</p>
           <ul className="mt-1 list-disc pl-5">
             {rejectedEntries.map((entry) => (

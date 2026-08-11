@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
 import { api, problemMessage } from "@/lib/api-client";
 import { getToken } from "@/lib/auth";
 
@@ -130,7 +131,7 @@ function RulePacksSection() {
                   </SelectContent>
                 </Select>
               </div>
-              {createError && <p className="text-sm text-red-600">{createError}</p>}
+              {createError && <p role="alert" className="text-sm text-red-600">{createError}</p>}
               <Button type="submit" disabled={creating} className="self-start">
                 {creating ? "Creating…" : "Create pack"}
               </Button>
@@ -289,7 +290,7 @@ function ManualsSection() {
         <p className="mb-3 text-xs text-neutral-500">
           Upload an exemption guide or SOP — RedactProof extracts candidate rules per page for you to accept, edit, or reject.
         </p>
-        {uploadError && <p className="mb-2 text-sm text-red-600">{uploadError}</p>}
+        {uploadError && <p role="alert" className="mb-2 text-sm text-red-600">{uploadError}</p>}
         {manualsQuery.isLoading ? (
           <p className="text-sm text-neutral-500">Loading…</p>
         ) : manualsQuery.data?.length === 0 ? (
@@ -354,10 +355,10 @@ function RuleImprovementsSection() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-left text-neutral-500">
-                    <th className="py-1.5 pr-2 font-medium">Rule</th>
-                    <th className="py-1.5 pr-2 font-medium">Rejected</th>
-                    <th className="py-1.5 pr-2 font-medium">Total suggested</th>
-                    <th className="py-1.5 font-medium">Rejection rate</th>
+                    <th scope="col" className="py-1.5 pr-2 font-medium">Rule</th>
+                    <th scope="col" className="py-1.5 pr-2 font-medium">Rejected</th>
+                    <th scope="col" className="py-1.5 pr-2 font-medium">Total suggested</th>
+                    <th scope="col" className="py-1.5 font-medium">Rejection rate</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -422,7 +423,7 @@ export default function RulesPage() {
   }, [router]);
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-8">
+    <main id="main-content" className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Rules & Policies</h1>
         <Link href="/documents" className="text-sm text-neutral-500 hover:underline">
@@ -430,25 +431,19 @@ export default function RulesPage() {
         </Link>
       </div>
 
-      <div className="flex items-center gap-2 border-b pb-2">
-        <Button variant={section === "packs" ? "default" : "outline"} size="sm" onClick={() => setSection("packs")}>
-          Rule packs
-        </Button>
-        <Button variant={section === "taxonomy" ? "default" : "outline"} size="sm" onClick={() => setSection("taxonomy")}>
-          Exemption taxonomy
-        </Button>
-        <Button variant={section === "manuals" ? "default" : "outline"} size="sm" onClick={() => setSection("manuals")}>
-          Manuals
-        </Button>
-        <Button variant={section === "improvements" ? "default" : "outline"} size="sm" onClick={() => setSection("improvements")}>
-          Suggested improvements
-        </Button>
-      </div>
+      <Tabs value={section} onValueChange={(v) => setSection(v as Section)}>
+        <TabsList>
+          <TabsTrigger value="packs">Rule packs</TabsTrigger>
+          <TabsTrigger value="taxonomy">Exemption taxonomy</TabsTrigger>
+          <TabsTrigger value="manuals">Manuals</TabsTrigger>
+          <TabsTrigger value="improvements">Suggested improvements</TabsTrigger>
+        </TabsList>
 
-      {section === "packs" && <RulePacksSection />}
-      {section === "taxonomy" && <TaxonomySection />}
-      {section === "manuals" && <ManualsSection />}
-      {section === "improvements" && <RuleImprovementsSection />}
+        <TabsPanel value="packs"><RulePacksSection /></TabsPanel>
+        <TabsPanel value="taxonomy"><TaxonomySection /></TabsPanel>
+        <TabsPanel value="manuals"><ManualsSection /></TabsPanel>
+        <TabsPanel value="improvements"><RuleImprovementsSection /></TabsPanel>
+      </Tabs>
     </main>
   );
 }

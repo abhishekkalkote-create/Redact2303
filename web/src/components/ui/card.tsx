@@ -33,9 +33,18 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+// Accessibility: a Card's title is the de facto section heading everywhere Card is used
+// (dashboard, rules, pricing, security, docs, ...) — rendering it as a plain <div>, as
+// this used to, meant screen-reader heading-navigation found nothing below the page's
+// own <h1> on any Card-heavy page (WCAG 1.3.1/2.4.6). Defaults to <h2> since Card is
+// typically a section under the page's own <h1>; pass `as` for a different level.
+function CardTitle({
+  className,
+  as: Comp = "h2",
+  ...props
+}: React.ComponentProps<"h2"> & { as?: "h1" | "h2" | "h3" | "h4" | "h5" | "h6" }) {
   return (
-    <div
+    <Comp
       data-slot="card-title"
       className={cn(
         "font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm",

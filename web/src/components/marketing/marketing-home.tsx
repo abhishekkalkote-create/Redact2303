@@ -59,7 +59,7 @@ export function MarketingHome() {
           {STEPS.map((step, i) => (
             <Card key={step.title}>
               <CardHeader>
-                <p className="text-xs font-medium text-neutral-400">Step {i + 1}</p>
+                <p className="text-xs font-medium text-neutral-500">Step {i + 1}</p>
                 <CardTitle>{step.title}</CardTitle>
               </CardHeader>
               <CardContent className="text-sm text-neutral-600">{step.body}</CardContent>

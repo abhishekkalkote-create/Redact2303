@@ -35,7 +35,7 @@ export function MarketingShell({ children }: { children: ReactNode }) {
           </nav>
         </div>
       </header>
-      <main className="flex-1">{children}</main>
+      <main id="main-content" className="flex-1">{children}</main>
       <footer className="border-t border-neutral-200">
         <div className="mx-auto flex max-w-5xl flex-col gap-2 px-6 py-8 text-xs text-neutral-500">
           <p>&copy; {new Date().getFullYear()} RedactProof. AI-assisted, human-verified document redaction.</p>

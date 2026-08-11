@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,11 +16,15 @@ import type { components } from "@redactproof/shared";
 
 type Candidate = components["schemas"]["CandidateOut"];
 
+// Accessibility: color alone must never be the only way to tell states apart (WCAG
+// 1.4.1) — border style (solid/dashed/dotted), not just hue, distinguishes these on the
+// page overlay; the side panel also repeats state as a text Badge (see `selected.state`
+// below) for whichever candidate is selected.
 const STATE_COLOR: Record<string, string> = {
-  suggested: "border-amber-500 bg-amber-500/10",
-  approved: "border-emerald-600 bg-emerald-600/20",
-  rejected: "border-neutral-400 bg-neutral-400/10 opacity-50",
-  modified: "border-blue-500 bg-blue-500/10",
+  suggested: "border-solid border-amber-500 bg-amber-500/10",
+  approved: "border-solid border-emerald-600 bg-emerald-600/20",
+  rejected: "border-dashed border-neutral-400 bg-neutral-400/10 opacity-50",
+  modified: "border-dotted border-blue-500 bg-blue-500/10",
 };
 
 const EXPORT_TYPES = [
@@ -181,9 +186,21 @@ export default function ReviewPage() {
   }, [pageCandidates, selectedId]);
 
   useEffect(() => {
+    // Accessibility (WCAG 2.1.4, single-character key shortcuts): bare letter keys must
+    // not fire while focus is on ANY text-entry or type-ahead-capable control, not just
+    // textarea/input — a combobox trigger or a plain button can also consume typed
+    // characters (e.g. Select's type-ahead). This is a partial mitigation, not full
+    // 2.1.4 compliance (that needs a way to remap/disable the shortcuts entirely, which
+    // isn't built) — flagged as a follow-up rather than silently claimed as done.
+    function isTypingTarget(target: EventTarget | null): boolean {
+      if (!(target instanceof HTMLElement)) return false;
+      if (target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement) return true;
+      if (target.isContentEditable) return true;
+      return target.closest('[role="combobox"], [data-slot="select-trigger"]') !== null;
+    }
     function onKeyDown(e: KeyboardEvent) {
       if (!selected) return;
-      if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return;
+      if (isTypingTarget(e.target)) return;
       if (e.key.toLowerCase() === "a") decide(selected, "approved");
       if (e.key.toLowerCase() === "r") decide(selected, "rejected");
       if (e.key.toLowerCase() === "n") selectNextCandidate();
@@ -224,6 +241,15 @@ export default function ReviewPage() {
   }
 
   async function handleExport() {
+    // specs/07-ui-spec.md Design standards: "Every destructive/irreversible action
+    // confirms with consequence text." This was missing entirely — export burns
+    // redactions permanently, so a single accidental click had no way back. A native
+    // confirm() is a real, keyboard- and screen-reader-accessible modal (not a custom
+    // one that could introduce its own focus-trap bugs) — a nicer in-app-styled
+    // confirmation is a reasonable follow-up, not a requirement for this to be safe.
+    if (!window.confirm("Export burns these redactions permanently into the file — this cannot be undone. Continue?")) {
+      return;
+    }
     setActionError(null);
     setExportResult(null);
     const { data, error } = await api.POST("/v1/documents/{doc_id}/exports", {
@@ -238,17 +264,17 @@ export default function ReviewPage() {
     queryClient.invalidateQueries({ queryKey: ["document", docId] });
   }
 
-  if (docQuery.isLoading) return <main className="p-8 text-sm text-neutral-500">Loading…</main>;
+  if (docQuery.isLoading) return <main id="main-content" role="status" className="p-8 text-sm text-neutral-500">Loading…</main>;
   if (!docQuery.data) return null;
   const doc = docQuery.data;
 
   const scale = imgSize && currentPageMeta ? imgSize.w / currentPageMeta.width : 1;
 
   return (
-    <main className="flex h-screen flex-col">
+    <main id="main-content" className="flex h-screen flex-col">
       <div className="flex items-center justify-between border-b p-3">
         <div>
-          <span className="font-medium">{doc.filename}</span>{" "}
+          <h1 className="inline font-medium">{doc.filename}</h1>{" "}
           <Badge variant="outline" className="ml-2">{doc.status}</Badge>
           <span className="ml-2 text-xs text-neutral-500">manifest v{manifestQuery.data?.version}</span>
         </div>
@@ -258,7 +284,11 @@ export default function ReviewPage() {
           </Button>
         </div>
       </div>
-      {actionError && <p className="border-b bg-red-50 p-2 text-sm text-red-600">{actionError}</p>}
+      {actionError && (
+        <p role="alert" className="border-b bg-red-50 p-2 text-sm text-red-600">
+          {actionError}
+        </p>
+      )}
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left rail: page list */}
@@ -295,6 +325,8 @@ export default function ReviewPage() {
                   <button
                     key={c.id}
                     onClick={() => setSelectedId(c.id)}
+                    aria-label={`Candidate: ${c.display_text || "(no text)"}, ${c.state}${c.exemption_code ? `, ${c.exemption_code}` : ""}`}
+                    aria-pressed={selectedId === c.id}
                     className={`absolute border-2 ${STATE_COLOR[c.state] ?? "border-neutral-400"} ${selectedId === c.id ? "ring-2 ring-blue-500" : ""}`}
                     style={{
                       left: c.bbox.x * scale,
@@ -302,7 +334,6 @@ export default function ReviewPage() {
                       width: c.bbox.w * scale,
                       height: c.bbox.h * scale,
                     }}
-                    title={c.exemption_code ?? ""}
                   />
                 ))}
             </div>
@@ -323,12 +354,14 @@ export default function ReviewPage() {
                 <Badge variant="secondary">{selected.state}</Badge>
               </div>
               <div>
-                <p className="mb-1 text-xs text-neutral-500">Exemption code</p>
+                <Label htmlFor="exemption-code-select" className="mb-1 text-xs text-neutral-500">
+                  Exemption code
+                </Label>
                 <Select
                   value={selected.exemption_code_id ?? undefined}
                   onValueChange={(v) => v && updateCode(selected, v)}
                 >
-                  <SelectTrigger><SelectValue placeholder="Choose a code…" /></SelectTrigger>
+                  <SelectTrigger id="exemption-code-select"><SelectValue placeholder="Choose a code…" /></SelectTrigger>
                   <SelectContent>
                     {codesQuery.data?.map((code) => (
                       <SelectItem key={code.id} value={code.id}>
@@ -340,8 +373,11 @@ export default function ReviewPage() {
               </div>
               {selected.ai_justification !== null && (
                 <div>
-                  <p className="mb-1 text-xs text-neutral-500">AI justification (editable)</p>
+                  <Label htmlFor="ai-justification" className="mb-1 text-xs text-neutral-500">
+                    AI justification (editable)
+                  </Label>
                   <Textarea
+                    id="ai-justification"
                     defaultValue={selected.ai_justification ?? ""}
                     onBlur={(e) => saveJustification(selected, e.target.value)}
                   />
@@ -377,7 +413,7 @@ export default function ReviewPage() {
       </div>
 
       <div className="flex items-center justify-between border-t p-3 text-sm">
-        <span className="text-neutral-500">
+        <span aria-live="polite" className="text-neutral-500">
           {lowConfidenceUnresolved > 0
             ? `${lowConfidenceUnresolved} low-confidence candidate(s) unresolved`
             : "All low-confidence candidates resolved"}
@@ -402,7 +438,7 @@ export default function ReviewPage() {
       </div>
 
       {exportResult && (
-        <div className="border-t bg-neutral-50 p-3 text-sm dark:bg-neutral-900">
+        <div role="status" aria-live="polite" className="border-t bg-neutral-50 p-3 text-sm dark:bg-neutral-900">
           <p className="mb-1 font-medium">Export complete:</p>
           <ul className="flex flex-col gap-1">
             {exportResult.map((artifact) => (

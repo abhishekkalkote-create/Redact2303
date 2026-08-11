@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { api, problemMessage } from "@/lib/api-client";
 import { getToken } from "@/lib/auth";
@@ -172,18 +173,18 @@ function RuleEditorForm({
       <div className="flex gap-3">
         {!initial && (
           <div className="flex flex-1 flex-col gap-1.5">
-            <Label>Rule key</Label>
-            <Input required value={f.rule_key} onChange={(e) => setF({ ...f, rule_key: e.target.value })} placeholder="CUSTOM-1" />
+            <Label htmlFor="rule-key">Rule key</Label>
+            <Input id="rule-key" required value={f.rule_key} onChange={(e) => setF({ ...f, rule_key: e.target.value })} placeholder="CUSTOM-1" />
           </div>
         )}
         <div className="flex flex-1 flex-col gap-1.5">
-          <Label>Name</Label>
-          <Input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+          <Label htmlFor="rule-name">Name</Label>
+          <Input id="rule-name" required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
         </div>
         <div className="flex w-44 flex-col gap-1.5">
-          <Label>Trigger type</Label>
+          <Label htmlFor="rule-trigger-type">Trigger type</Label>
           <Select value={f.trigger_type} onValueChange={(v) => v && setF({ ...f, trigger_type: v })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger id="rule-trigger-type"><SelectValue /></SelectTrigger>
             <SelectContent>
               {TRIGGER_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
             </SelectContent>
@@ -193,14 +194,14 @@ function RuleEditorForm({
 
       {(f.trigger_type === "regex" || f.trigger_type === "metadata") && (
         <div className="flex flex-col gap-1.5">
-          <Label>Pattern (regex)</Label>
-          <Input required value={f.pattern} onChange={(e) => setF({ ...f, pattern: e.target.value })} className="font-mono" />
+          <Label htmlFor="rule-pattern">Pattern (regex)</Label>
+          <Input id="rule-pattern" required value={f.pattern} onChange={(e) => setF({ ...f, pattern: e.target.value })} className="font-mono" />
         </div>
       )}
       {f.trigger_type === "metadata" && (
         <div className="flex flex-col gap-1.5">
-          <Label>Document metadata field</Label>
-          <Input required value={f.metadataField} onChange={(e) => setF({ ...f, metadataField: e.target.value })} placeholder="author" />
+          <Label htmlFor="rule-metadata-field">Document metadata field</Label>
+          <Input id="rule-metadata-field" required value={f.metadataField} onChange={(e) => setF({ ...f, metadataField: e.target.value })} placeholder="author" />
         </div>
       )}
       {f.trigger_type === "regex" && (
@@ -217,32 +218,32 @@ function RuleEditorForm({
       )}
       {f.trigger_type === "entity" && (
         <div className="flex flex-col gap-1.5">
-          <Label>Entity type (Presidio)</Label>
-          <Input required value={f.entityType} onChange={(e) => setF({ ...f, entityType: e.target.value })} placeholder="US_SSN, PERSON, EMAIL_ADDRESS…" />
+          <Label htmlFor="rule-entity-type">Entity type (Presidio)</Label>
+          <Input id="rule-entity-type" required value={f.entityType} onChange={(e) => setF({ ...f, entityType: e.target.value })} placeholder="US_SSN, PERSON, EMAIL_ADDRESS…" />
         </div>
       )}
       {f.trigger_type === "dictionary" && (
         <div className="flex flex-col gap-1.5">
-          <Label>Terms (one per line)</Label>
-          <Textarea required value={f.termsText} onChange={(e) => setF({ ...f, termsText: e.target.value })} />
+          <Label htmlFor="rule-terms">Terms (one per line)</Label>
+          <Textarea id="rule-terms" required value={f.termsText} onChange={(e) => setF({ ...f, termsText: e.target.value })} />
         </div>
       )}
       {(f.trigger_type === "regex" || f.trigger_type === "entity") && (
         <div className="flex gap-3">
           <div className="flex flex-1 flex-col gap-1.5">
-            <Label>Context words (comma-separated, optional)</Label>
-            <Input value={f.contextWords} onChange={(e) => setF({ ...f, contextWords: e.target.value })} />
+            <Label htmlFor="rule-context-words">Context words (comma-separated, optional)</Label>
+            <Input id="rule-context-words" value={f.contextWords} onChange={(e) => setF({ ...f, contextWords: e.target.value })} />
           </div>
           <div className="flex w-32 flex-col gap-1.5">
-            <Label>Window (chars)</Label>
-            <Input type="number" value={f.contextWindow} onChange={(e) => setF({ ...f, contextWindow: Number(e.target.value) })} />
+            <Label htmlFor="rule-context-window">Window (chars)</Label>
+            <Input id="rule-context-window" type="number" value={f.contextWindow} onChange={(e) => setF({ ...f, contextWindow: Number(e.target.value) })} />
           </div>
         </div>
       )}
       {f.trigger_type === "llm_context" && (
         <div className="flex flex-col gap-1.5">
-          <Label>Instruction (natural language — executed by the contextual pass, not the deterministic engine)</Label>
-          <Textarea required value={f.instruction} onChange={(e) => setF({ ...f, instruction: e.target.value })} />
+          <Label htmlFor="rule-instruction">Instruction (natural language — executed by the contextual pass, not the deterministic engine)</Label>
+          <Textarea id="rule-instruction" required value={f.instruction} onChange={(e) => setF({ ...f, instruction: e.target.value })} />
         </div>
       )}
 
@@ -250,13 +251,13 @@ function RuleEditorForm({
 
       <div className="flex gap-3">
         <div className="flex flex-1 flex-col gap-1.5">
-          <Label>Exemption code</Label>
+          <Label htmlFor="rule-exemption-code">Exemption code</Label>
           <Select
             value={f.exemption_code_id}
             onValueChange={(v) => setF({ ...f, exemption_code_id: v ?? "" })}
             items={Object.fromEntries((codesQuery.data ?? []).map((code) => [code.id, `${code.code} — ${code.label}`]))}
           >
-            <SelectTrigger className="w-full"><SelectValue placeholder="None" /></SelectTrigger>
+            <SelectTrigger id="rule-exemption-code" className="w-full"><SelectValue placeholder="None" /></SelectTrigger>
             <SelectContent>
               {(codesQuery.data ?? []).map((code) => (
                 <SelectItem key={code.id} value={code.id}>{code.code} — {code.label}</SelectItem>
@@ -265,22 +266,22 @@ function RuleEditorForm({
           </Select>
         </div>
         <div className="flex w-32 flex-col gap-1.5">
-          <Label>Priority</Label>
-          <Input type="number" value={f.priority} onChange={(e) => setF({ ...f, priority: Number(e.target.value) })} />
+          <Label htmlFor="rule-priority">Priority</Label>
+          <Input id="rule-priority" type="number" value={f.priority} onChange={(e) => setF({ ...f, priority: Number(e.target.value) })} />
         </div>
         <div className="flex w-40 flex-col gap-1.5">
-          <Label>Confidence policy</Label>
+          <Label htmlFor="rule-confidence-policy">Confidence policy</Label>
           <Select value={f.confidence_policy} onValueChange={(v) => v && setF({ ...f, confidence_policy: v })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger id="rule-confidence-policy"><SelectValue /></SelectTrigger>
             <SelectContent>
               {CONFIDENCE_POLICIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
         <div className="flex w-36 flex-col gap-1.5">
-          <Label>Scope</Label>
+          <Label htmlFor="rule-scope">Scope</Label>
           <Select value={f.scope} onValueChange={(v) => v && setF({ ...f, scope: v })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger id="rule-scope"><SelectValue /></SelectTrigger>
             <SelectContent>
               {SCOPES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
@@ -288,12 +289,12 @@ function RuleEditorForm({
         </div>
       </div>
       <div className="flex flex-col gap-1.5">
-        <Label>Exclusions (JSON array — allowlist / context_not / pattern_carveout)</Label>
-        <Textarea value={f.exclusionsJson} onChange={(e) => setF({ ...f, exclusionsJson: e.target.value })} className="font-mono text-xs" />
+        <Label htmlFor="rule-exclusions">Exclusions (JSON array — allowlist / context_not / pattern_carveout)</Label>
+        <Textarea id="rule-exclusions" value={f.exclusionsJson} onChange={(e) => setF({ ...f, exclusionsJson: e.target.value })} className="font-mono text-xs" />
       </div>
       <div className="flex flex-col gap-1.5">
-        <Label>Source reference (optional)</Label>
-        <Input value={f.source_ref} onChange={(e) => setF({ ...f, source_ref: e.target.value })} placeholder="Manual section anchor, NL instruction, …" />
+        <Label htmlFor="rule-source-ref">Source reference (optional)</Label>
+        <Input id="rule-source-ref" value={f.source_ref} onChange={(e) => setF({ ...f, source_ref: e.target.value })} placeholder="Manual section anchor, NL instruction, …" />
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
@@ -430,14 +431,14 @@ function RulesTab({ versionId, onVersionForked }: { versionId: string; onVersion
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left text-neutral-500">
-                <th className="py-1.5 pr-2 font-medium">Key</th>
-                <th className="py-1.5 pr-2 font-medium">Name</th>
-                <th className="py-1.5 pr-2 font-medium">Trigger</th>
-                <th className="py-1.5 pr-2 font-medium">Priority</th>
-                <th className="py-1.5 pr-2 font-medium">Confidence policy</th>
-                <th className="py-1.5 pr-2 font-medium">Exclusions</th>
-                <th className="py-1.5 pr-2 font-medium">Status</th>
-                <th className="py-1.5 font-medium" />
+                <th scope="col" className="py-1.5 pr-2 font-medium">Key</th>
+                <th scope="col" className="py-1.5 pr-2 font-medium">Name</th>
+                <th scope="col" className="py-1.5 pr-2 font-medium">Trigger</th>
+                <th scope="col" className="py-1.5 pr-2 font-medium">Priority</th>
+                <th scope="col" className="py-1.5 pr-2 font-medium">Confidence policy</th>
+                <th scope="col" className="py-1.5 pr-2 font-medium">Exclusions</th>
+                <th scope="col" className="py-1.5 pr-2 font-medium">Status</th>
+                <th scope="col" className="py-1.5 font-medium"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -756,7 +757,7 @@ export default function RulePackDetailPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-8">
+    <main id="main-content" className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">{pack?.name ?? "Rule pack"}</h1>
@@ -783,31 +784,37 @@ export default function RulePackDetailPage() {
         </div>
       )}
 
-      <div className="flex items-center gap-2 border-b pb-2">
-        <Button variant={tab === "rules" ? "default" : "outline"} size="sm" onClick={() => setTab("rules")}>Rules</Button>
-        <Button variant={tab === "test-bench" ? "default" : "outline"} size="sm" onClick={() => setTab("test-bench")}>Test bench</Button>
-        <Button variant={tab === "versions" ? "default" : "outline"} size="sm" onClick={() => setTab("versions")}>Versions</Button>
-      </div>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+        <TabsList>
+          <TabsTrigger value="rules">Rules</TabsTrigger>
+          <TabsTrigger value="test-bench">Test bench</TabsTrigger>
+          <TabsTrigger value="versions">Versions</TabsTrigger>
+        </TabsList>
 
-      {versionsQuery.isLoading ? (
-        <p className="text-sm text-neutral-500">Loading…</p>
-      ) : !selectedVersionId ? (
-        <p className="text-sm text-neutral-500">This pack has no versions yet.</p>
-      ) : (
-        <>
-          {tab === "rules" && <RulesTab versionId={selectedVersionId} onVersionForked={refetchVersionsAndFollowDraft} />}
-          {tab === "test-bench" && <TestBenchTab versionId={selectedVersionId} />}
-          {tab === "versions" && (
-            <VersionsTab
-              packId={packId}
-              versions={versions}
-              selectedVersionId={selectedVersionId}
-              onSelectVersion={setSelectedVersionId}
-              onChanged={refetchVersionsAndFollowDraft}
-            />
-          )}
-        </>
-      )}
+        {versionsQuery.isLoading ? (
+          <p className="text-sm text-neutral-500">Loading…</p>
+        ) : !selectedVersionId ? (
+          <p className="text-sm text-neutral-500">This pack has no versions yet.</p>
+        ) : (
+          <>
+            <TabsPanel value="rules">
+              <RulesTab versionId={selectedVersionId} onVersionForked={refetchVersionsAndFollowDraft} />
+            </TabsPanel>
+            <TabsPanel value="test-bench">
+              <TestBenchTab versionId={selectedVersionId} />
+            </TabsPanel>
+            <TabsPanel value="versions">
+              <VersionsTab
+                packId={packId}
+                versions={versions}
+                selectedVersionId={selectedVersionId}
+                onSelectVersion={setSelectedVersionId}
+                onChanged={refetchVersionsAndFollowDraft}
+              />
+            </TabsPanel>
+          </>
+        )}
+      </Tabs>
     </main>
   );
 }

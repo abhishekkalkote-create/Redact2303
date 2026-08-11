@@ -27,7 +27,7 @@ export default function Home() {
   }, [router]);
 
   if (checkingSession) {
-    return <main className="flex flex-1 items-center justify-center text-sm text-neutral-500">Loading…</main>;
+    return <main id="main-content" role="status" className="flex flex-1 items-center justify-center text-sm text-neutral-500">Loading…</main>;
   }
 
   return <MarketingHome />;

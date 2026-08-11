@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
 import { api, problemMessage } from "@/lib/api-client";
 import { clearToken, getToken } from "@/lib/auth";
 
@@ -114,111 +115,107 @@ function QueueDashboard() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2 border-b pb-2">
-          <Button variant={tab === "mine" ? "default" : "outline"} size="sm" onClick={() => setTab("mine")}>
-            My queue
-          </Button>
-          {isSupervisor && (
-            <Button variant={tab === "team" ? "default" : "outline"} size="sm" onClick={() => setTab("team")}>
-              Team queue
-            </Button>
-          )}
-          <Button variant={tab === "exports" ? "default" : "outline"} size="sm" onClick={() => setTab("exports")}>
-            Recent exports
-          </Button>
-        </div>
+        <Tabs value={tab} onValueChange={(v) => setTab(v as QueueTab)}>
+          <TabsList>
+            <TabsTrigger value="mine">My queue</TabsTrigger>
+            {isSupervisor && <TabsTrigger value="team">Team queue</TabsTrigger>}
+            <TabsTrigger value="exports">Recent exports</TabsTrigger>
+          </TabsList>
 
-        {tab === "mine" && (
-          <div className="flex flex-col gap-3">
-            <label className="flex items-center gap-2 text-sm text-neutral-600">
-              <input
-                type="checkbox"
-                checked={lowConfidenceFirst}
-                onChange={(e) => setLowConfidenceFirst(e.target.checked)}
-              />
-              Sort low-confidence-first
-            </label>
-            {myQueueQuery.isLoading ? (
-              <p className="text-sm text-neutral-500">Loading…</p>
-            ) : myQueueQuery.data?.length === 0 ? (
-              <p className="text-sm text-neutral-500">Nothing assigned to you right now.</p>
-            ) : (
-              <ul className="flex flex-col divide-y">
-                {myQueueQuery.data?.map((doc) => (
-                  <li key={doc.id} className="flex items-center justify-between py-2">
-                    <Link href={`/documents/${doc.id}/review`} className="font-medium hover:underline">
-                      {doc.filename}
-                    </Link>
-                    <div className="flex items-center gap-2 text-xs text-neutral-500">
-                      {doc.due_date && <span>due {new Date(doc.due_date).toLocaleDateString()}</span>}
-                      <Badge variant={STATUS_VARIANT[doc.status] ?? "outline"}>{doc.status}</Badge>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
-
-        {tab === "team" && isSupervisor && (
-          <div className="flex flex-col gap-2">
-            {teamQueueQuery.isLoading ? (
-              <p className="text-sm text-neutral-500">Loading…</p>
-            ) : teamQueueQuery.data?.length === 0 ? (
-              <p className="text-sm text-neutral-500">No active reviewers yet.</p>
-            ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left text-neutral-500">
-                    <th className="py-1 font-medium">Reviewer</th>
-                    <th className="py-1 font-medium">Assigned</th>
-                    <th className="py-1 font-medium">Overdue</th>
-                    <th className="py-1 font-medium">Due soon</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {teamQueueQuery.data?.map((row) => (
-                    <tr key={row.user_id} className="border-b last:border-0">
-                      <td className="py-2">
-                        {row.name} <span className="text-neutral-500">({row.email})</span>
-                      </td>
-                      <td className="py-2">{row.assigned_count}</td>
-                      <td className="py-2">
-                        {row.overdue_count > 0 ? (
-                          <Badge variant="destructive">{row.overdue_count}</Badge>
-                        ) : (
-                          row.overdue_count
-                        )}
-                      </td>
-                      <td className="py-2">{row.due_soon_count}</td>
-                    </tr>
+          <TabsPanel value="mine">
+            <div className="flex flex-col gap-3">
+              <label className="flex items-center gap-2 text-sm text-neutral-600">
+                <input
+                  type="checkbox"
+                  checked={lowConfidenceFirst}
+                  onChange={(e) => setLowConfidenceFirst(e.target.checked)}
+                />
+                Sort low-confidence-first
+              </label>
+              {myQueueQuery.isLoading ? (
+                <p className="text-sm text-neutral-500">Loading…</p>
+              ) : myQueueQuery.data?.length === 0 ? (
+                <p className="text-sm text-neutral-500">Nothing assigned to you right now.</p>
+              ) : (
+                <ul className="flex flex-col divide-y">
+                  {myQueueQuery.data?.map((doc) => (
+                    <li key={doc.id} className="flex items-center justify-between py-2">
+                      <Link href={`/documents/${doc.id}/review`} className="font-medium hover:underline">
+                        {doc.filename}
+                      </Link>
+                      <div className="flex items-center gap-2 text-xs text-neutral-500">
+                        {doc.due_date && <span>due {new Date(doc.due_date).toLocaleDateString()}</span>}
+                        <Badge variant={STATUS_VARIANT[doc.status] ?? "outline"}>{doc.status}</Badge>
+                      </div>
+                    </li>
                   ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        )}
+                </ul>
+              )}
+            </div>
+          </TabsPanel>
 
-        {tab === "exports" && (
-          <div className="flex flex-col gap-2">
-            {exportsQuery.isLoading ? (
-              <p className="text-sm text-neutral-500">Loading…</p>
-            ) : exportsQuery.data?.length === 0 ? (
-              <p className="text-sm text-neutral-500">No exports yet.</p>
-            ) : (
-              <ul className="flex flex-col divide-y">
-                {exportsQuery.data?.map((exp) => (
-                  <li key={exp.id} className="flex items-center justify-between py-2 text-sm">
-                    <span>
-                      {exp.type} <span className="text-neutral-500">({exp.doc_id})</span>
-                    </span>
-                    <span className="text-xs text-neutral-500">{new Date(exp.created_at).toLocaleString()}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
+          {isSupervisor && (
+            <TabsPanel value="team">
+              <div className="flex flex-col gap-2">
+                {teamQueueQuery.isLoading ? (
+                  <p className="text-sm text-neutral-500">Loading…</p>
+                ) : teamQueueQuery.data?.length === 0 ? (
+                  <p className="text-sm text-neutral-500">No active reviewers yet.</p>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left text-neutral-500">
+                        <th scope="col" className="py-1 font-medium">Reviewer</th>
+                        <th scope="col" className="py-1 font-medium">Assigned</th>
+                        <th scope="col" className="py-1 font-medium">Overdue</th>
+                        <th scope="col" className="py-1 font-medium">Due soon</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {teamQueueQuery.data?.map((row) => (
+                        <tr key={row.user_id} className="border-b last:border-0">
+                          <td className="py-2">
+                            {row.name} <span className="text-neutral-500">({row.email})</span>
+                          </td>
+                          <td className="py-2">{row.assigned_count}</td>
+                          <td className="py-2">
+                            {row.overdue_count > 0 ? (
+                              <Badge variant="destructive">{row.overdue_count}</Badge>
+                            ) : (
+                              row.overdue_count
+                            )}
+                          </td>
+                          <td className="py-2">{row.due_soon_count}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </TabsPanel>
+          )}
+
+          <TabsPanel value="exports">
+            <div className="flex flex-col gap-2">
+              {exportsQuery.isLoading ? (
+                <p className="text-sm text-neutral-500">Loading…</p>
+              ) : exportsQuery.data?.length === 0 ? (
+                <p className="text-sm text-neutral-500">No exports yet.</p>
+              ) : (
+                <ul className="flex flex-col divide-y">
+                  {exportsQuery.data?.map((exp) => (
+                    <li key={exp.id} className="flex items-center justify-between py-2 text-sm">
+                      <span>
+                        {exp.type} <span className="text-neutral-500">({exp.doc_id})</span>
+                      </span>
+                      <span className="text-xs text-neutral-500">{new Date(exp.created_at).toLocaleString()}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </TabsPanel>
+        </Tabs>
       </CardContent>
     </Card>
   );
@@ -318,14 +315,14 @@ export default function DashboardPage() {
   }
 
   if (orgQuery.isLoading) {
-    return <main className="p-8 text-sm text-neutral-500">Loading…</main>;
+    return <main id="main-content" role="status" className="p-8 text-sm text-neutral-500">Loading…</main>;
   }
   if (!orgQuery.data) return null;
 
   const org = orgQuery.data;
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-8">
+    <main id="main-content" className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">{org.name}</h1>
@@ -359,9 +356,11 @@ export default function DashboardPage() {
               This card goes away once you&rsquo;ve processed a document. One optional step in the meantime:
             </p>
             <ul className="flex flex-col gap-1.5 text-sm text-neutral-500">
-              <li className="flex items-center gap-2">
-                <input type="checkbox" checked={(membersQuery.data?.length ?? 0) > 1} disabled /> Invite a
-                teammate (skippable)
+              <li>
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" checked={(membersQuery.data?.length ?? 0) > 1} disabled /> Invite a
+                  teammate (skippable)
+                </label>
               </li>
             </ul>
             <div className="flex items-center gap-2">
@@ -372,7 +371,7 @@ export default function DashboardPage() {
                 {sampleLoading ? "Processing sample…" : "Try a sample document instead"}
               </Button>
             </div>
-            {sampleError && <p className="text-sm text-red-600">{sampleError}</p>}
+            {sampleError && <p role="alert" className="text-sm text-red-600">{sampleError}</p>}
             <p className="text-xs text-neutral-500">
               The sample document is a fictional incident report shaped to show a few different exemption
               codes — processing it never counts against your plan&rsquo;s usage.
@@ -435,9 +434,9 @@ export default function DashboardPage() {
                 </Select>
               </div>
             </div>
-            {inviteError && <p className="text-sm text-red-600">{inviteError}</p>}
+            {inviteError && <p role="alert" className="text-sm text-red-600">{inviteError}</p>}
             {inviteToken && (
-              <p className="rounded bg-neutral-100 p-3 text-sm">
+              <p role="status" aria-live="polite" className="rounded bg-neutral-100 p-3 text-sm">
                 No email delivery yet (Phase 3) — share this accept link manually:
                 <br />
                 <code className="break-all">
