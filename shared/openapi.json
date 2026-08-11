@@ -1385,8 +1385,10 @@
                 "exemption_log": true
               },
               "features": {},
+              "mfa_enforced": true,
               "retention_days_exports": 2555,
-              "retention_days_uploads": 90
+              "retention_days_uploads": 90,
+              "session_length_minutes": 60
             },
             "title": "Settings",
             "type": "object"
@@ -1447,6 +1449,17 @@
             ],
             "title": "Export Defaults"
           },
+          "mfa_enforced": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mfa Enforced"
+          },
           "retention_days_exports": {
             "anyOf": [
               {
@@ -1468,6 +1481,17 @@
               }
             ],
             "title": "Retention Days Uploads"
+          },
+          "session_length_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Length Minutes"
           }
         },
         "title": "OrgSettingsUpdate",

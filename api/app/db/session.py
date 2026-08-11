@@ -67,3 +67,21 @@ async def user_session(user_id: str) -> AsyncGenerator[AsyncSession, None]:
             text("SELECT set_config('app.user_id', :user_id, true)"), {"user_id": user_id}
         )
         yield session
+
+
+@asynccontextmanager
+async def system_session() -> AsyncGenerator[AsyncSession, None]:
+    """`async with system_session() as session:` — declares `app.system_context` (never
+    `app.org_id` or `app.user_id`), the ONLY thing that unlocks the additive
+    `system_context_select` RLS policy on `organizations` (migration 0011). That policy
+    grants read-only visibility into the org *directory* (which org ids exist) and nothing
+    else — every other tenant table's strict tenant_isolation policy still denies all rows
+    to a session with no `app.org_id` set, same as before.
+
+    Exists for exactly one purpose: internal cron handlers
+    (app/routers/internal_cron.py) that must loop `org_session(org_id)` over every org, and
+    have no other RLS-safe way to learn what "every org" is. Never expose this to anything
+    that isn't that trusted, shared-secret-gated internal path."""
+    async with AsyncSessionLocal() as session, session.begin():
+        await session.execute(text("SELECT set_config('app.system_context', 'true', true)"))
+        yield session

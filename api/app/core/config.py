@@ -53,6 +53,13 @@ class Settings(BaseSettings):
     # public and protects nothing.
     certificate_signing_key: str = "dev-only-insecure-certificate-signing-key-change-me"
 
+    # app/routers/internal_cron.py — shared secret for the external scheduler (a cron/
+    # launchd loop locally, EventBridge Scheduler in prod) that calls these endpoints;
+    # there is no user behind a scheduled job, so this isn't a Cognito/JWT concern. Real
+    # prod value belongs in Secrets Manager, not committed. This placeholder is public
+    # and protects nothing.
+    internal_cron_secret: str = "dev-only-insecure-cron-secret-change-me"
+
     @property
     def cognito_configured(self) -> bool:
         return bool(self.cognito_user_pool_id and self.cognito_app_client_id)

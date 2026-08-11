@@ -1,3 +1,4 @@
+import hmac
 from collections.abc import AsyncGenerator
 
 import jwt as pyjwt
@@ -109,3 +110,15 @@ def require_role(*roles: str):
         return membership
 
     return _dep
+
+
+def require_internal_cron_secret(
+    x_internal_cron_secret: str | None = Header(default=None, alias="X-Internal-Cron-Secret"),
+    settings: Settings = Depends(get_settings),
+) -> None:
+    """Shared-secret auth for app/routers/internal_cron.py. Deliberately does not go
+    through get_current_user/Cognito at all — there is no user behind a scheduled job.
+    hmac.compare_digest for a timing-safe comparison: this is a bearer secret, same threat
+    model as a password."""
+    if not x_internal_cron_secret or not hmac.compare_digest(x_internal_cron_secret, settings.internal_cron_secret):
+        raise _unauthorized("Invalid or missing internal cron secret")

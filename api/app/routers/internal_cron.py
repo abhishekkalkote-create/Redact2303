@@ -1,0 +1,46 @@
+"""specs/02-architecture.md: no scheduler exists in this repo yet — an external scheduler
+(a cron/launchd loop locally, EventBridge Scheduler in prod) hits these endpoints on an
+interval. Shared-secret auth (app/auth/deps.py's require_internal_cron_secret), never
+Cognito — there's no user behind a scheduled job. Not part of the public API surface:
+excluded from the OpenAPI schema the web app's TS client is generated from.
+
+Every handler here must sweep every org (a tick covers the whole platform, never a single
+org context) and be safe to call again on the same tick if the caller retries after a
+non-2xx.
+"""
+
+from datetime import UTC, datetime
+
+from fastapi import APIRouter, Depends
+from sqlalchemy import select
+
+from app.auth.deps import require_internal_cron_secret
+from app.db.session import org_session, system_session
+from app.models.organization import Organization
+from app.services.webhook_service import retry_pending_deliveries
+
+router = APIRouter(
+    prefix="/internal/cron",
+    tags=["internal-cron"],
+    include_in_schema=False,
+    dependencies=[Depends(require_internal_cron_secret)],
+)
+
+
+async def _all_org_ids() -> list[str]:
+    async with system_session() as session:
+        result = await session.execute(select(Organization.id))
+        return [row[0] for row in result.all()]
+
+
+@router.post("/webhook-retry")
+async def webhook_retry_tick() -> dict:
+    """Closes the Phase 3 gap noted in app/services/webhook_service.py's module
+    docstring: retry_pending_deliveries() is real and correct but had no periodic caller
+    until now."""
+    now = datetime.now(UTC)
+    retried_count = 0
+    for org_id in await _all_org_ids():
+        async with org_session(org_id) as session:
+            retried_count += len(await retry_pending_deliveries(session, org_id, now))
+    return {"deliveries_retried": retried_count}

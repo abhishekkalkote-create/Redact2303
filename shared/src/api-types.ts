@@ -1485,8 +1485,10 @@ export interface components {
              *         "exemption_log": true
              *       },
              *       "features": {},
+             *       "mfa_enforced": true,
              *       "retention_days_exports": 2555,
-             *       "retention_days_uploads": 90
+             *       "retention_days_uploads": 90,
+             *       "session_length_minutes": 60
              *     }
              */
             settings: {
@@ -1505,10 +1507,14 @@ export interface components {
             export_defaults?: {
                 [key: string]: unknown;
             } | null;
+            /** Mfa Enforced */
+            mfa_enforced?: boolean | null;
             /** Retention Days Exports */
             retention_days_exports?: number | null;
             /** Retention Days Uploads */
             retention_days_uploads?: number | null;
+            /** Session Length Minutes */
+            session_length_minutes?: number | null;
         };
         /** PageOut */
         PageOut: {

@@ -17,6 +17,7 @@ from app.routers import (
     exemption_codes,
     exports,
     health,
+    internal_cron,
     invites,
     manuals,
     members,
@@ -52,6 +53,7 @@ app.add_exception_handler(RequestValidationError, validation_error_handler)  # t
 app.add_exception_handler(Exception, unhandled_error_handler)
 
 app.include_router(health.router)
+app.include_router(internal_cron.router)
 app.include_router(auth.router, prefix=settings.api_v1_prefix)
 app.include_router(orgs.router, prefix=settings.api_v1_prefix)
 app.include_router(members.router, prefix=settings.api_v1_prefix)
