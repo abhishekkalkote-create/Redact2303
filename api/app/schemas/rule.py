@@ -142,3 +142,36 @@ class TestBenchResponse(BaseModel):
     added: list[TestBenchMatchOut]
     removed: list[TestBenchMatchOut]
     unchanged: list[TestBenchMatchOut]
+
+
+class RuleRejectionStatOut(BaseModel):
+    """specs/05-redaction-pipeline.md: "rejected AI candidates by rule/pattern ...
+    'suggested rule improvements' report for admins." A high `rejection_rate` flags a
+    rule worth narrowing (tighter regex, added exclusions, context words)."""
+
+    rule_key: str
+    rule_name: str | None = None
+    total_count: int
+    rejected_count: int
+    rejection_rate: float
+
+
+class ManualPatternClusterOut(BaseModel):
+    """A group of reviewer-added manual redactions (no rule caught these) that share a
+    normalized text shape — a candidate for a brand-new rule."""
+
+    pattern: str
+    count: int
+    sample_texts: list[str]
+    exemption_codes: list[str]
+
+
+class RuleImprovementsReportOut(BaseModel):
+    """specs/01-product-spec.md US-11: "Admins see a 'suggested rule improvements'
+    report (v1: report only; no auto-learning)." Computed live from `redaction_candidates`
+    feedback (rejections + manual additions) — no automatic rule mutation happens here or
+    anywhere else."""
+
+    generated_at: datetime
+    rejected_by_rule: list[RuleRejectionStatOut]
+    manual_clusters: list[ManualPatternClusterOut]

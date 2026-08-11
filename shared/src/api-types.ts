@@ -832,6 +832,28 @@ export interface paths {
         patch: operations["patch_request_route_v1_requests__request_id__patch"];
         trace?: never;
     };
+    "/v1/rule-improvements-report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Rule Improvements Report Route
+         * @description specs/01-product-spec.md US-11 / specs/05-redaction-pipeline.md: rejected AI
+         *     candidates by rule + reviewer-added manual redactions clustered by text pattern —
+         *     report only, never mutates a rule.
+         */
+        get: operations["get_rule_improvements_report_route_v1_rule_improvements_report_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/rule-packs": {
         parameters: {
             query?: never;
@@ -1364,6 +1386,21 @@ export interface components {
             /** Uploaded By */
             uploaded_by: string;
         };
+        /**
+         * ManualPatternClusterOut
+         * @description A group of reviewer-added manual redactions (no rule caught these) that share a
+         *     normalized text shape — a candidate for a brand-new rule.
+         */
+        ManualPatternClusterOut: {
+            /** Count */
+            count: number;
+            /** Exemption Codes */
+            exemption_codes: string[];
+            /** Pattern */
+            pattern: string;
+            /** Sample Texts */
+            sample_texts: string[];
+        };
         /** MemberOut */
         MemberOut: {
             /** Email */
@@ -1657,6 +1694,24 @@ export interface components {
             /** Trigger Type */
             trigger_type: string;
         };
+        /**
+         * RuleImprovementsReportOut
+         * @description specs/01-product-spec.md US-11: "Admins see a 'suggested rule improvements'
+         *     report (v1: report only; no auto-learning)." Computed live from `redaction_candidates`
+         *     feedback (rejections + manual additions) — no automatic rule mutation happens here or
+         *     anywhere else.
+         */
+        RuleImprovementsReportOut: {
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Manual Clusters */
+            manual_clusters: components["schemas"]["ManualPatternClusterOut"][];
+            /** Rejected By Rule */
+            rejected_by_rule: components["schemas"]["RuleRejectionStatOut"][];
+        };
         /** RuleOut */
         RuleOut: {
             /** Confidence Policy */
@@ -1749,6 +1804,24 @@ export interface components {
             status?: string | null;
             /** Trigger Type */
             trigger_type?: string | null;
+        };
+        /**
+         * RuleRejectionStatOut
+         * @description specs/05-redaction-pipeline.md: "rejected AI candidates by rule/pattern ...
+         *     'suggested rule improvements' report for admins." A high `rejection_rate` flags a
+         *     rule worth narrowing (tighter regex, added exclusions, context words).
+         */
+        RuleRejectionStatOut: {
+            /** Rejected Count */
+            rejected_count: number;
+            /** Rejection Rate */
+            rejection_rate: number;
+            /** Rule Key */
+            rule_key: string;
+            /** Rule Name */
+            rule_name?: string | null;
+            /** Total Count */
+            total_count: number;
         };
         /** RuleSetVersionOut */
         RuleSetVersionOut: {
@@ -3660,6 +3733,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_rule_improvements_report_route_v1_rule_improvements_report_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleImprovementsReportOut"];
                 };
             };
             /** @description Validation Error */

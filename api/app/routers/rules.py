@@ -10,6 +10,7 @@ from app.schemas.rule import (
     ProposedRuleChangeOut,
     PublishVersionRequest,
     RuleCreate,
+    RuleImprovementsReportOut,
     RuleOut,
     RulePackCreate,
     RulePackOut,
@@ -23,6 +24,7 @@ from app.services.rule_service import (
     create_draft_version,
     create_rule_pack,
     delete_rule,
+    get_rule_improvements_report,
     get_version_with_rules,
     list_rule_packs,
     list_versions_for_pack,
@@ -155,3 +157,14 @@ async def publish_rule_set_version_route(
     db: AsyncSession = Depends(get_org_db),
 ) -> RuleSetVersion:
     return await publish_version(db, membership.org_id, membership.user_id, version_id, payload.changelog)
+
+
+@router.get("/rule-improvements-report", response_model=RuleImprovementsReportOut)
+async def get_rule_improvements_report_route(
+    membership: Membership = Depends(require_role("agency_admin", "supervisor")),
+    db: AsyncSession = Depends(get_org_db),
+) -> RuleImprovementsReportOut:
+    """specs/01-product-spec.md US-11 / specs/05-redaction-pipeline.md: rejected AI
+    candidates by rule + reviewer-added manual redactions clustered by text pattern —
+    report only, never mutates a rule."""
+    return RuleImprovementsReportOut(**await get_rule_improvements_report(db, membership.org_id))

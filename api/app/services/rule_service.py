@@ -16,16 +16,19 @@ corresponding rule THERE, and returns that — the caller doesn't have to orches
 fork themselves.
 """
 
+import re
 from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import ApiError, NotFoundError
 from app.core.ids import new_id
+from app.crypto.envelope import get_cipher
 from app.llm.provider import get_provider
 from app.models.document import Document
 from app.models.exemption_code import ExemptionCode
+from app.models.redaction_candidate import RedactionCandidate
 from app.models.rule import Rule, RulePack, RuleSetVersion
 from app.pipeline.extract import extract_pdf
 from app.pipeline.nl_rule_edit import PROMPT_VERSION as NL_EDIT_PROMPT_VERSION
@@ -380,3 +383,108 @@ async def run_test_bench(
     )
     await session.flush()
     return result
+
+
+AI_ORIGINS = ("deterministic", "llm")
+MIN_MANUAL_CLUSTER_SIZE = 2
+
+
+def _normalize_pattern(raw_text: str) -> str:
+    """Heuristic shape signature for grouping manual redactions that no rule caught —
+    v1 is deliberately simple (digits -> '#', collapsed whitespace/case) rather than ML,
+    matching specs/01 US-11: "report only; no auto-learning." Good enough to cluster
+    e.g. every SSN- or case-number-shaped manual addition together."""
+    normalized = re.sub(r"\d", "#", raw_text.strip().lower())
+    normalized = re.sub(r"#+", "#", normalized)
+    return re.sub(r"\s+", " ", normalized)
+
+
+async def get_rule_improvements_report(session: AsyncSession, org_id: str) -> dict:
+    """specs/05-redaction-pipeline.md: "aggregates: rejected AI candidates by
+    rule/pattern, reviewer-added manual redactions clustered by text pattern ->
+    'suggested rule improvements' report for admins. No automatic rule mutation."
+    Computed live off `redaction_candidates` (no nightly-job runner exists yet in this
+    repo) rather than a stored snapshot — same on-demand-aggregation pattern as
+    app/services/dashboard_service.py. Never writes to a rule."""
+    stats_result = await session.execute(
+        select(
+            RedactionCandidate.source_rule_key,
+            func.count(RedactionCandidate.id),
+            func.sum(case((RedactionCandidate.state == "rejected", 1), else_=0)),
+        )
+        .where(RedactionCandidate.org_id == org_id, RedactionCandidate.origin.in_(AI_ORIGINS), RedactionCandidate.source_rule_key.is_not(None))
+        .group_by(RedactionCandidate.source_rule_key)
+    )
+    stats_rows = stats_result.all()
+
+    rule_keys = [row[0] for row in stats_rows]
+    name_by_key: dict[str, str] = {}
+    if rule_keys:
+        # Best-effort label only — a rule_key isn't a stable FK (rules fork across draft
+        # versions), so this just grabs the most recently created match for a friendly name.
+        names_result = await session.execute(
+            select(Rule.rule_key, Rule.name).where(Rule.rule_key.in_(rule_keys)).order_by(Rule.created_at.desc())
+        )
+        for rule_key, name in names_result.all():
+            name_by_key.setdefault(rule_key, name)
+
+    rejected_by_rule = sorted(
+        (
+            {
+                "rule_key": rule_key,
+                "rule_name": name_by_key.get(rule_key),
+                "total_count": total,
+                "rejected_count": rejected,
+                "rejection_rate": round(rejected / total, 4) if total else 0.0,
+            }
+            for rule_key, total, rejected in stats_rows
+        ),
+        key=lambda r: (r["rejected_count"], r["rejection_rate"]),
+        reverse=True,
+    )
+
+    manual_result = await session.execute(
+        select(RedactionCandidate.display_text_encrypted, RedactionCandidate.exemption_code_id).where(
+            RedactionCandidate.org_id == org_id, RedactionCandidate.origin == "manual"
+        )
+    )
+    manual_rows = manual_result.all()
+
+    code_ids = {code_id for _text, code_id in manual_rows if code_id}
+    code_by_id: dict[str, str] = {}
+    if code_ids:
+        codes_result = await session.execute(select(ExemptionCode.id, ExemptionCode.code).where(ExemptionCode.id.in_(code_ids)))
+        code_by_id = {row[0]: row[1] for row in codes_result.all()}
+
+    cipher = get_cipher()
+    clusters: dict[str, dict] = {}
+    for encrypted_text, code_id in manual_rows:
+        plaintext = cipher.decrypt(org_id, encrypted_text)
+        pattern = _normalize_pattern(plaintext)
+        cluster = clusters.setdefault(pattern, {"count": 0, "sample_texts": [], "exemption_codes": set()})
+        cluster["count"] += 1
+        if len(cluster["sample_texts"]) < 5:
+            cluster["sample_texts"].append(plaintext)
+        if code_id:
+            cluster["exemption_codes"].add(code_by_id.get(code_id, code_id))
+
+    manual_clusters = sorted(
+        (
+            {
+                "pattern": pattern,
+                "count": c["count"],
+                "sample_texts": c["sample_texts"],
+                "exemption_codes": sorted(c["exemption_codes"]),
+            }
+            for pattern, c in clusters.items()
+            if c["count"] >= MIN_MANUAL_CLUSTER_SIZE
+        ),
+        key=lambda c: c["count"],
+        reverse=True,
+    )
+
+    return {
+        "generated_at": datetime.now(UTC),
+        "rejected_by_rule": rejected_by_rule,
+        "manual_clusters": manual_clusters,
+    }

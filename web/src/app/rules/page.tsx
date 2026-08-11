@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { api, problemMessage } from "@/lib/api-client";
 import { getToken } from "@/lib/auth";
 
-type Section = "packs" | "taxonomy" | "manuals";
+type Section = "packs" | "taxonomy" | "manuals" | "improvements";
 
 const CATEGORIES = ["core_pii", "public_safety", "hr", "legal", "health", "custom"];
 
@@ -319,6 +319,100 @@ function ManualsSection() {
   );
 }
 
+function RuleImprovementsSection() {
+  const reportQuery = useQuery({
+    queryKey: ["rule-improvements-report"],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/v1/rule-improvements-report", {});
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  if (reportQuery.isLoading) {
+    return <p className="text-sm text-neutral-500">Loading…</p>;
+  }
+
+  const report = reportQuery.data;
+  const rejected = report?.rejected_by_rule ?? [];
+  const clusters = report?.manual_clusters ?? [];
+
+  return (
+    <div className="flex flex-col gap-6">
+      <p className="text-xs text-neutral-500">
+        Feedback signal from reviewer decisions — report only, nothing here changes a rule automatically.
+        {report && ` Generated ${new Date(report.generated_at).toLocaleString()}.`}
+      </p>
+
+      <Card>
+        <CardHeader><CardTitle>Rules with high rejection rates</CardTitle></CardHeader>
+        <CardContent>
+          {rejected.length === 0 ? (
+            <p className="text-sm text-neutral-500">No AI candidates have been rejected yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-neutral-500">
+                    <th className="py-1.5 pr-2 font-medium">Rule</th>
+                    <th className="py-1.5 pr-2 font-medium">Rejected</th>
+                    <th className="py-1.5 pr-2 font-medium">Total suggested</th>
+                    <th className="py-1.5 font-medium">Rejection rate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rejected.map((r) => (
+                    <tr key={r.rule_key} className="border-b last:border-0">
+                      <td className="py-2 pr-2">
+                        <span className="font-mono">{r.rule_key}</span>
+                        {r.rule_name && <span className="text-neutral-500"> — {r.rule_name}</span>}
+                      </td>
+                      <td className="py-2 pr-2">{r.rejected_count}</td>
+                      <td className="py-2 pr-2">{r.total_count}</td>
+                      <td className="py-2">
+                        <Badge variant={r.rejection_rate >= 0.5 ? "destructive" : "outline"}>
+                          {Math.round(r.rejection_rate * 100)}%
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Manual redactions no rule caught</CardTitle></CardHeader>
+        <CardContent>
+          <p className="mb-3 text-xs text-neutral-500">
+            Reviewer-added redactions clustered by text shape — a recurring cluster is a candidate for a new rule.
+          </p>
+          {clusters.length === 0 ? (
+            <p className="text-sm text-neutral-500">No recurring manual-redaction patterns yet.</p>
+          ) : (
+            <ul className="flex flex-col divide-y rounded-lg border">
+              {clusters.map((c) => (
+                <li key={c.pattern} className="flex flex-col gap-1 px-3 py-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono">{c.pattern}</span>
+                    <Badge variant="secondary">{c.count} occurrences</Badge>
+                  </div>
+                  {c.exemption_codes.length > 0 && (
+                    <p className="text-xs text-neutral-500">codes used: {c.exemption_codes.join(", ")}</p>
+                  )}
+                  <p className="truncate text-xs text-neutral-500">e.g. {c.sample_texts.join(" · ")}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function RulesPage() {
   const router = useRouter();
   const [section, setSection] = useState<Section>("packs");
@@ -346,11 +440,15 @@ export default function RulesPage() {
         <Button variant={section === "manuals" ? "default" : "outline"} size="sm" onClick={() => setSection("manuals")}>
           Manuals
         </Button>
+        <Button variant={section === "improvements" ? "default" : "outline"} size="sm" onClick={() => setSection("improvements")}>
+          Suggested improvements
+        </Button>
       </div>
 
       {section === "packs" && <RulePacksSection />}
       {section === "taxonomy" && <TaxonomySection />}
       {section === "manuals" && <ManualsSection />}
+      {section === "improvements" && <RuleImprovementsSection />}
     </main>
   );
 }

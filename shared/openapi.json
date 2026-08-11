@@ -1146,6 +1146,41 @@
         "title": "ManualOut",
         "type": "object"
       },
+      "ManualPatternClusterOut": {
+        "description": "A group of reviewer-added manual redactions (no rule caught these) that share a\nnormalized text shape \u2014 a candidate for a brand-new rule.",
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "exemption_codes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Exemption Codes",
+            "type": "array"
+          },
+          "pattern": {
+            "title": "Pattern",
+            "type": "string"
+          },
+          "sample_texts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sample Texts",
+            "type": "array"
+          }
+        },
+        "required": [
+          "pattern",
+          "count",
+          "sample_texts",
+          "exemption_codes"
+        ],
+        "title": "ManualPatternClusterOut",
+        "type": "object"
+      },
       "MemberOut": {
         "properties": {
           "email": {
@@ -1949,6 +1984,37 @@
         "title": "RuleCreate",
         "type": "object"
       },
+      "RuleImprovementsReportOut": {
+        "description": "specs/01-product-spec.md US-11: \"Admins see a 'suggested rule improvements'\nreport (v1: report only; no auto-learning).\" Computed live from `redaction_candidates`\nfeedback (rejections + manual additions) \u2014 no automatic rule mutation happens here or\nanywhere else.",
+        "properties": {
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "manual_clusters": {
+            "items": {
+              "$ref": "#/components/schemas/ManualPatternClusterOut"
+            },
+            "title": "Manual Clusters",
+            "type": "array"
+          },
+          "rejected_by_rule": {
+            "items": {
+              "$ref": "#/components/schemas/RuleRejectionStatOut"
+            },
+            "title": "Rejected By Rule",
+            "type": "array"
+          }
+        },
+        "required": [
+          "generated_at",
+          "rejected_by_rule",
+          "manual_clusters"
+        ],
+        "title": "RuleImprovementsReportOut",
+        "type": "object"
+      },
       "RuleOut": {
         "properties": {
           "confidence_policy": {
@@ -2281,6 +2347,46 @@
           }
         },
         "title": "RulePatch",
+        "type": "object"
+      },
+      "RuleRejectionStatOut": {
+        "description": "specs/05-redaction-pipeline.md: \"rejected AI candidates by rule/pattern ...\n'suggested rule improvements' report for admins.\" A high `rejection_rate` flags a\nrule worth narrowing (tighter regex, added exclusions, context words).",
+        "properties": {
+          "rejected_count": {
+            "title": "Rejected Count",
+            "type": "integer"
+          },
+          "rejection_rate": {
+            "title": "Rejection Rate",
+            "type": "number"
+          },
+          "rule_key": {
+            "title": "Rule Key",
+            "type": "string"
+          },
+          "rule_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule Name"
+          },
+          "total_count": {
+            "title": "Total Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rule_key",
+          "total_count",
+          "rejected_count",
+          "rejection_rate"
+        ],
+        "title": "RuleRejectionStatOut",
         "type": "object"
       },
       "RuleSetVersionOut": {
@@ -6549,6 +6655,72 @@
         "summary": "Patch Request Route",
         "tags": [
           "requests"
+        ]
+      }
+    },
+    "/v1/rule-improvements-report": {
+      "get": {
+        "description": "specs/01-product-spec.md US-11 / specs/05-redaction-pipeline.md: rejected AI\ncandidates by rule + reviewer-added manual redactions clustered by text pattern \u2014\nreport only, never mutates a rule.",
+        "operationId": "get_rule_improvements_report_route_v1_rule_improvements_report_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleImprovementsReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Rule Improvements Report Route",
+        "tags": [
+          "rules"
         ]
       }
     },
