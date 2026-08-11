@@ -5,8 +5,9 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import app.db.session as db_session_module
 from app.core.errors import ConflictError, NotFoundError
-from app.db.session import AsyncSessionLocal, org_session, user_session
+from app.db.session import org_session, user_session
 from app.models.invite import Invite
 from app.models.membership import Membership
 from app.models.user import User
@@ -53,8 +54,14 @@ async def _find_invite_by_token(token_hash: str) -> Invite | None:
     a second, narrowly-scoped policy: a session that declares (via set_config) the exact
     token_hash it's asserting knowledge of may see *only* the one row matching that hash.
     Knowing the hash requires knowing the original 256-bit token, so this can't be used to
-    enumerate other orgs' invites (see migration 0001 `invite_token_lookup` policy)."""
-    async with AsyncSessionLocal() as session, session.begin():
+    enumerate other orgs' invites (see migration 0001 `invite_token_lookup` policy).
+
+    Goes through the module (not a `from ... import AsyncSessionLocal` binding) so a test
+    that monkeypatches app.db.session.AsyncSessionLocal to point at a test database
+    actually takes effect here — a direct import at this module's own top freezes the
+    reference at import time, before any test fixture gets a chance to patch it (see
+    app/auth/deps.py's get_current_user, which had the same bug)."""
+    async with db_session_module.AsyncSessionLocal() as session, session.begin():
         await session.execute(
             text("SELECT set_config('app.lookup_invite_token_hash', :h, true)"),
             {"h": token_hash},

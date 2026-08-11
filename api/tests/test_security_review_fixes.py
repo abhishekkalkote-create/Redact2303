@@ -63,6 +63,10 @@ async def _seed_two_orgs_with_candidate(session: AsyncSession) -> dict:
         )
     )
     session.add(Manifest(id=new_id("man"), org_id=org_a, doc_id=doc_id, version=1))
+    # Autoflush does not fire ahead of a raw session.execute(text(...)) the way it would
+    # for an ORM query — without this, the redaction_candidates insert below races the
+    # still-pending Document row and fails its FK constraint.
+    await session.flush()
     own_code_id = new_id("exc")
     await session.execute(
         text("INSERT INTO exemption_codes (id, org_id, code, label, status) VALUES (:id, :org_id, 'OWN-1', 'Own code', 'active')"),

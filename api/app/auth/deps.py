@@ -6,11 +6,12 @@ from fastapi import Depends, Header, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import app.db.session as db_session_module
 from app.auth.cognito import CognitoClaims, CognitoVerifier
 from app.auth.dev_provider import verify_dev_token
 from app.core.config import Settings, get_settings
 from app.core.errors import ApiError
-from app.db.session import AsyncSessionLocal, org_session, user_session
+from app.db.session import org_session, user_session
 from app.models.membership import Membership
 from app.models.organization import Organization
 from app.models.platform_admin import PlatformAdmin
@@ -53,8 +54,12 @@ async def get_current_user(
     except pyjwt.PyJWTError as exc:
         raise _unauthorized("Invalid or expired token") from exc
 
-    # Global users table has no RLS — plain session is correct here.
-    async with AsyncSessionLocal() as session:
+    # Global users table has no RLS — plain session is correct here. Goes through the
+    # module (not a `from ... import AsyncSessionLocal` binding) so tests that monkeypatch
+    # app.db.session.AsyncSessionLocal to point at a test database actually take effect
+    # here too — a direct import freezes the reference at this module's own import time,
+    # before any test fixture has a chance to patch it.
+    async with db_session_module.AsyncSessionLocal() as session:
         user = await _get_or_create_user(session, claims)
         return user
 
@@ -144,8 +149,9 @@ async def require_platform_admin(user: User = Depends(get_current_user)) -> User
     get_current_user's own users lookup), layered on top of the normal Cognito/dev-auth
     flow rather than a separate Cognito app client (the spec's "separate subdomain,
     separate app client" is an infra/deployment-topology decision this slice doesn't
-    touch; see app/routers/platform.py's module docstring)."""
-    async with AsyncSessionLocal() as session:
+    touch; see app/routers/platform.py's module docstring). Same module-attribute-access
+    rationale as get_current_user's own AsyncSessionLocal() call — see that docstring."""
+    async with db_session_module.AsyncSessionLocal() as session:
         admin = await session.get(PlatformAdmin, user.id)
     if admin is None:
         raise ApiError(403, "Forbidden", "Platform admin access required")
