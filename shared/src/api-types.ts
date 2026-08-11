@@ -116,6 +116,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/billing/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Billing Invoices */
+        get: operations["list_billing_invoices_v1_billing_invoices_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Billing Plan */
+        get: operations["get_billing_plan_v1_billing_plan_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/billing/portal": {
         parameters: {
             query?: never;
@@ -1047,6 +1081,40 @@ export interface paths {
         patch: operations["patch_rule_route_v1_rules__rule_id__patch"];
         trace?: never;
     };
+    "/v1/usage/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Current Usage */
+        get: operations["get_current_usage_v1_usage_current_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/usage/records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Usage Records */
+        get: operations["get_usage_records_v1_usage_records_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1404,6 +1472,26 @@ export interface components {
             /** Token */
             token?: string | null;
         };
+        /** InvoiceOut */
+        InvoiceOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Line Items */
+            line_items: {
+                [key: string]: unknown;
+            }[];
+            /** Pdf Url */
+            pdf_url: string | null;
+            /** Period */
+            period: string;
+            /** Status */
+            status: string;
+        };
         /** ManifestOut */
         ManifestOut: {
             /** Candidates */
@@ -1579,6 +1667,35 @@ export interface components {
             rotation: number;
             /** Width */
             width: number;
+        };
+        /** PerUserUsageOut */
+        PerUserUsageOut: {
+            /** Pages Processed */
+            pages_processed: number;
+            /** User Id */
+            user_id: string;
+            /** User Name */
+            user_name: string;
+        };
+        /**
+         * PlanCardOut
+         * @description specs/07-ui-spec.md § 8: "Plan card (name, seats, included pages, renewal)." No
+         *     renewal date yet — that needs subscription period tracking the webhook handler
+         *     (app/services/billing_service.py) doesn't capture, left for a later slice.
+         */
+        PlanCardOut: {
+            /** Pages Included */
+            pages_included: number | null;
+            /** Plan */
+            plan: string;
+            /** Plan Name */
+            plan_name: string;
+            /** Plan Status */
+            plan_status: string;
+            /** Seats Active */
+            seats_active: number;
+            /** Seats Included */
+            seats_included: number;
         };
         /** PortalRequest */
         PortalRequest: {
@@ -2002,6 +2119,33 @@ export interface components {
              */
             token_type: string;
         };
+        /** UsageCurrentOut */
+        UsageCurrentOut: {
+            /** Cap Kind */
+            cap_kind: string;
+            /** Overage Cost Cents */
+            overage_cost_cents: number;
+            /** Overage Pages */
+            overage_pages: number;
+            /** Pages Included */
+            pages_included: number | null;
+            /** Pages Used */
+            pages_used: number;
+            /** Per User Breakdown */
+            per_user_breakdown: components["schemas"]["PerUserUsageOut"][];
+            /** Period */
+            period: string;
+            /** Plan */
+            plan: string;
+            /** Seats Active */
+            seats_active: number;
+            /** Seats Included */
+            seats_included: number;
+            /** Totals By Metric */
+            totals_by_metric: {
+                [key: string]: number;
+            };
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -2246,6 +2390,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckoutResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_billing_invoices_v1_billing_invoices_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_billing_plan_v1_billing_plan_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanCardOut"];
                 };
             };
             /** @description Validation Error */
@@ -4330,6 +4538,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RuleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_current_usage_v1_usage_current_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsageCurrentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_usage_records_v1_usage_records_get: {
+        parameters: {
+            query?: {
+                period?: string | null;
+                format?: string;
+            };
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

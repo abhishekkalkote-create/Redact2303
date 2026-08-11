@@ -1104,6 +1104,56 @@
         "title": "InviteOut",
         "type": "object"
       },
+      "InvoiceOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "line_items": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Line Items",
+            "type": "array"
+          },
+          "pdf_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pdf Url"
+          },
+          "period": {
+            "title": "Period",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "period",
+          "status",
+          "line_items",
+          "pdf_url",
+          "created_at"
+        ],
+        "title": "InvoiceOut",
+        "type": "object"
+      },
       "ManifestOut": {
         "properties": {
           "candidates": {
@@ -1568,6 +1618,75 @@
           "has_text_layer"
         ],
         "title": "PageOut",
+        "type": "object"
+      },
+      "PerUserUsageOut": {
+        "properties": {
+          "pages_processed": {
+            "title": "Pages Processed",
+            "type": "integer"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          },
+          "user_name": {
+            "title": "User Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "user_name",
+          "pages_processed"
+        ],
+        "title": "PerUserUsageOut",
+        "type": "object"
+      },
+      "PlanCardOut": {
+        "description": "specs/07-ui-spec.md \u00a7 8: \"Plan card (name, seats, included pages, renewal).\" No\nrenewal date yet \u2014 that needs subscription period tracking the webhook handler\n(app/services/billing_service.py) doesn't capture, left for a later slice.",
+        "properties": {
+          "pages_included": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pages Included"
+          },
+          "plan": {
+            "title": "Plan",
+            "type": "string"
+          },
+          "plan_name": {
+            "title": "Plan Name",
+            "type": "string"
+          },
+          "plan_status": {
+            "title": "Plan Status",
+            "type": "string"
+          },
+          "seats_active": {
+            "title": "Seats Active",
+            "type": "integer"
+          },
+          "seats_included": {
+            "title": "Seats Included",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "plan",
+          "plan_name",
+          "plan_status",
+          "seats_included",
+          "seats_active",
+          "pages_included"
+        ],
+        "title": "PlanCardOut",
         "type": "object"
       },
       "PortalRequest": {
@@ -2769,6 +2888,82 @@
         "title": "TokenResponse",
         "type": "object"
       },
+      "UsageCurrentOut": {
+        "properties": {
+          "cap_kind": {
+            "title": "Cap Kind",
+            "type": "string"
+          },
+          "overage_cost_cents": {
+            "title": "Overage Cost Cents",
+            "type": "integer"
+          },
+          "overage_pages": {
+            "title": "Overage Pages",
+            "type": "integer"
+          },
+          "pages_included": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pages Included"
+          },
+          "pages_used": {
+            "title": "Pages Used",
+            "type": "integer"
+          },
+          "per_user_breakdown": {
+            "items": {
+              "$ref": "#/components/schemas/PerUserUsageOut"
+            },
+            "title": "Per User Breakdown",
+            "type": "array"
+          },
+          "period": {
+            "title": "Period",
+            "type": "string"
+          },
+          "plan": {
+            "title": "Plan",
+            "type": "string"
+          },
+          "seats_active": {
+            "title": "Seats Active",
+            "type": "integer"
+          },
+          "seats_included": {
+            "title": "Seats Included",
+            "type": "integer"
+          },
+          "totals_by_metric": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Totals By Metric",
+            "type": "object"
+          }
+        },
+        "required": [
+          "period",
+          "plan",
+          "cap_kind",
+          "totals_by_metric",
+          "pages_included",
+          "pages_used",
+          "seats_included",
+          "seats_active",
+          "overage_pages",
+          "overage_cost_cents",
+          "per_user_breakdown"
+        ],
+        "title": "UsageCurrentOut",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -3332,6 +3527,140 @@
           }
         },
         "summary": "Create Billing Checkout",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/v1/billing/invoices": {
+      "get": {
+        "operationId": "list_billing_invoices_v1_billing_invoices_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InvoiceOut"
+                  },
+                  "title": "Response List Billing Invoices V1 Billing Invoices Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Billing Invoices",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/v1/billing/plan": {
+      "get": {
+        "operationId": "get_billing_plan_v1_billing_plan_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanCardOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Billing Plan",
         "tags": [
           "billing"
         ]
@@ -7892,6 +8221,162 @@
         "summary": "Patch Rule Route",
         "tags": [
           "rules"
+        ]
+      }
+    },
+    "/v1/usage/current": {
+      "get": {
+        "operationId": "get_current_usage_v1_usage_current_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageCurrentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Current Usage",
+        "tags": [
+          "usage"
+        ]
+      }
+    },
+    "/v1/usage/records": {
+      "get": {
+        "operationId": "get_usage_records_v1_usage_records_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "period",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^\\d{4}-\\d{2}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Period"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "default": "json",
+              "pattern": "^(json|csv)$",
+              "title": "Format",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Org-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Usage Records",
+        "tags": [
+          "usage"
         ]
       }
     }

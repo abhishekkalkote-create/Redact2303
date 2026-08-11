@@ -29,6 +29,9 @@ class MockBillingProvider(BillingProvider):
     async def create_portal_session(self, customer_id: str, return_url: str) -> str:
         return f"{return_url}?mock_portal_for={customer_id}"
 
+    async def report_usage(self, customer_id: str, metric: str, quantity: int, period: str) -> None:
+        return None
+
     def parse_webhook_event(self, payload: bytes, signature_header: str | None) -> BillingEvent:
         try:
             body = json.loads(payload)

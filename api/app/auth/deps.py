@@ -2,7 +2,7 @@ import hmac
 from collections.abc import AsyncGenerator
 
 import jwt as pyjwt
-from fastapi import Depends, Header
+from fastapi import Depends, Header, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,7 +12,10 @@ from app.core.config import Settings, get_settings
 from app.core.errors import ApiError
 from app.db.session import AsyncSessionLocal, org_session, user_session
 from app.models.membership import Membership
+from app.models.organization import Organization
 from app.models.user import User
+
+_SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 
 
 def _unauthorized(detail: str) -> ApiError:
@@ -97,8 +100,30 @@ async def get_membership(
 
 
 async def get_org_db(
+    request: Request,
     membership: Membership = Depends(get_membership),
 ) -> AsyncGenerator[AsyncSession, None]:
+    """specs/09-admin-billing.md: a suspended org is "read-only: can view/export nothing
+    new" — enforced here, the one choke point nearly every org-scoped router already
+    depends on, rather than retrofitting every individual route. GET/HEAD/OPTIONS always
+    pass; anything else is blocked once plan_status is suspended.
+
+    app/routers/billing.py's checkout/portal routes use get_org_db_allow_suspended
+    instead — they're the only way a suspended org can pay and reactivate, so they must
+    stay reachable even while everything else is blocked."""
+    async with org_session(membership.org_id) as session:
+        if request.method not in _SAFE_METHODS:
+            org = await session.get(Organization, membership.org_id)
+            if org is not None and org.plan_status == "suspended":
+                raise ApiError(403, "Forbidden", "Organization is suspended; read-only until billing is resolved")
+        yield session
+
+
+async def get_org_db_allow_suspended(
+    membership: Membership = Depends(get_membership),
+) -> AsyncGenerator[AsyncSession, None]:
+    """Same as get_org_db but without the suspended-org gate — see get_org_db's
+    docstring for why app/routers/billing.py's checkout/portal routes need this."""
     async with org_session(membership.org_id) as session:
         yield session
 

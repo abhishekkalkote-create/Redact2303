@@ -27,6 +27,7 @@ from app.routers import (
     requests,
     review,
     rules,
+    usage,
     webhooks,
 )
 
@@ -72,3 +73,4 @@ app.include_router(webhooks.router, prefix=settings.api_v1_prefix)
 app.include_router(rules.router, prefix=settings.api_v1_prefix)
 app.include_router(manuals.router, prefix=settings.api_v1_prefix)
 app.include_router(billing.router, prefix=settings.api_v1_prefix)
+app.include_router(usage.router, prefix=settings.api_v1_prefix)

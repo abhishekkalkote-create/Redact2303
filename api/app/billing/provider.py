@@ -71,6 +71,13 @@ class BillingProvider(ABC):
         Raises ApiError(400) on a malformed or unverifiable payload."""
         ...
 
+    @abstractmethod
+    async def report_usage(self, customer_id: str, metric: str, quantity: int, period: str) -> None:
+        """Reports a metered-usage quantity for a billing period (Stripe: meter events).
+        Called by the usage-aggregate cron handler (app/routers/internal_cron.py); our own
+        usage_records stay the truth for what happened, this is just telling the biller."""
+        ...
+
 
 def get_billing_provider(settings: Settings | None = None) -> BillingProvider:
     settings = settings or get_settings()

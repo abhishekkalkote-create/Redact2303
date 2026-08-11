@@ -17,6 +17,7 @@ from sqlalchemy import select
 from app.auth.deps import require_internal_cron_secret
 from app.db.session import org_session, system_session
 from app.models.organization import Organization
+from app.services.usage_service import aggregate_and_report_usage, check_usage_thresholds
 from app.services.webhook_service import retry_pending_deliveries
 
 router = APIRouter(
@@ -44,3 +45,30 @@ async def webhook_retry_tick() -> dict:
         async with org_session(org_id) as session:
             retried_count += len(await retry_pending_deliveries(session, org_id, now))
     return {"deliveries_retried": retried_count}
+
+
+@router.post("/usage-aggregate")
+async def usage_aggregate_tick() -> dict:
+    """specs/09-admin-billing.md: "daily job aggregates usage_records -> Stripe meter
+    events.\""""
+    now = datetime.now(UTC)
+    records_reported = 0
+    for org_id in await _all_org_ids():
+        async with org_session(org_id) as session:
+            records_reported += await aggregate_and_report_usage(session, org_id, now)
+    return {"records_reported": records_reported}
+
+
+@router.post("/usage-threshold-check")
+async def usage_threshold_check_tick() -> dict:
+    now = datetime.now(UTC)
+    events_fired: dict[str, list[str]] = {}
+    for org_id in await _all_org_ids():
+        async with org_session(org_id) as session:
+            org = await session.get(Organization, org_id)
+            if org is None:
+                continue
+            fired = await check_usage_thresholds(session, org, now)
+            if fired:
+                events_fired[org_id] = fired
+    return {"events_fired": events_fired}
