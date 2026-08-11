@@ -14,7 +14,7 @@ whenever such a feature is deliberately built.
 
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import ApiError, NotFoundError
@@ -55,15 +55,26 @@ async def decide_grant(session: AsyncSession, org_id: str, grant_id: str, decide
     grant = await session.get(SupportGrant, grant_id)
     if grant is None or grant.org_id != org_id:
         raise NotFoundError("Support grant not found")
-    if grant.status != "requested":
-        raise ApiError(409, "Conflict", f"Grant already decided (status: {grant.status})")
 
     now = datetime.now(UTC)
-    grant.status = "approved" if approve else "denied"
-    grant.decided_by = decided_by
-    grant.decided_at = now
-    if approve:
-        grant.expires_at = now + MAX_GRANT_DURATION
+    new_status = "approved" if approve else "denied"
+
+    # Security self-review finding: this used to be read-then-write on `grant.status`
+    # (check in Python, then set attributes) — two concurrent approve/deny calls could
+    # both pass the "still requested" check before either committed. The UPDATE's own
+    # WHERE clause is the actual atomic guard: Postgres only lets ONE of two racing
+    # UPDATEs affect a row with status='requested', and the second sees rowcount=0.
+    result = await session.execute(
+        update(SupportGrant)
+        .where(SupportGrant.id == grant_id, SupportGrant.status == "requested")
+        .values(
+            status=new_status, decided_by=decided_by, decided_at=now,
+            expires_at=now + MAX_GRANT_DURATION if approve else None,
+        )
+    )
+    if result.rowcount == 0:  # type: ignore[attr-defined]  # CursorResult at runtime for an UPDATE; Result[Any] statically
+        await session.refresh(grant)  # pick up whatever the winning writer actually set
+        raise ApiError(409, "Conflict", f"Grant already decided (status: {grant.status})")
 
     await write_audit_event(
         session, org_id=org_id, actor_type="user", actor_id=decided_by,

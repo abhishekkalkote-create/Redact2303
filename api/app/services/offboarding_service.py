@@ -49,7 +49,14 @@ async def _add_documents_and_manifests(session: AsyncSession, org_id: str, zf: z
     for document in docs_result.scalars().all():
         if document.s3_key_original:
             try:
-                zf.writestr(f"originals/{document.id}/{document.filename}", store.get(org_id, document.s3_key_original))
+                # Security self-review finding: document.filename is client-controlled
+                # (set at upload time) and was used raw as a zip entry name — a filename
+                # like "../../etc/passwd" wouldn't escape anything on write, but could
+                # zip-slip whoever later extracts this package with a naive unzipper.
+                # Same basename-flattening guard app/pipeline/intake.py's own zip
+                # expansion already uses for the reverse direction.
+                safe_filename = document.filename.rsplit("/", 1)[-1]
+                zf.writestr(f"originals/{document.id}/{safe_filename}", store.get(org_id, document.s3_key_original))
             except FileNotFoundError:
                 pass
         try:
@@ -112,8 +119,13 @@ async def offboard_org(platform_admin_user_id: str, org_id: str, confirm_slug: s
         package = await generate_offboarding_package(session, org_id)
 
         doc_ids = await find_documents_eligible_for_offboarding_purge(session, org_id)
+        purged_count = 0
         for doc_id in doc_ids:
-            await purge_document_content(session, org_id, doc_id, now)
+            # purge_document_content re-checks legal_hold itself immediately before
+            # destroying anything (security self-review finding: a hold can land after
+            # this eligibility query ran but before a later document's turn in the loop).
+            if await purge_document_content(session, org_id, doc_id, now):
+                purged_count += 1
 
         org_row = await session.get(Organization, org_id)
         assert org_row is not None
@@ -124,14 +136,14 @@ async def offboard_org(platform_admin_user_id: str, org_id: str, confirm_slug: s
             action="platform.org_offboarded", object_type="organization", object_id=org_id,
             metadata={
                 "offboarded_at": now.isoformat(),
-                "documents_purged": len(doc_ids),
+                "documents_purged": purged_count,
                 "package_sha256": hashlib.sha256(package).hexdigest(),
                 "crypto_shred": "deferred — per-org CMK encryption not yet wired (app/crypto/envelope.py)",
             },
         )
         await session.flush()
 
-    return package, len(doc_ids)
+    return package, purged_count
 
 
 @dataclass

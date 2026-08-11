@@ -2,13 +2,23 @@
 chain (each row hashes canonical content + prev_hash). Call `write_audit_event` inside the
 SAME transaction as the state change it describes — it doesn't manage its own transaction,
 so the audit row and the action it records commit or roll back together.
+
+Security self-review finding: reading `prev_hash` was a plain SELECT with no locking —
+two concurrent writers for the same org could both read the same prev_hash before either
+committed, forking the chain (verify_chain would eventually catch it, but the fork itself
+is a real, self-inflicted integrity failure, not just theoretical). Fixed with a
+transaction-scoped Postgres advisory lock keyed on org_id: it serializes concurrent
+`write_audit_event` calls for the SAME org and auto-releases at commit/rollback, so it
+composes correctly with the "same transaction as the state change" contract above. Two
+different orgs hashing to the same lock key (a `hashtext` collision) only costs a little
+extra serialization between unrelated orgs — never a correctness issue.
 """
 
 import hashlib
 import json
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.ids import new_id
@@ -63,6 +73,7 @@ ACTIONS = frozenset(
         "billing.payment_succeeded",
         "billing.payment_failed",
         "billing.subscription_canceled",
+        "billing.invoice_recorded",
         "platform.org_provisioned",
         "platform.org_updated",
         "support_grant.requested",
@@ -95,6 +106,9 @@ async def write_audit_event(
 ) -> AuditEvent:
     if action not in ACTIONS:
         raise ValueError(f"Unknown audit action {action!r} — add it to ACTIONS")
+
+    # Serializes concurrent writers for this org — see module docstring.
+    await session.execute(text("SELECT pg_advisory_xact_lock(hashtext(:org_id))"), {"org_id": org_id})
 
     result = await session.execute(
         select(AuditEvent.hash)

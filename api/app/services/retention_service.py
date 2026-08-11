@@ -60,14 +60,27 @@ async def find_documents_eligible_for_purge(session: AsyncSession, org: Organiza
     return [row[0] for row in result.all()]
 
 
-async def purge_document_content(session: AsyncSession, org_id: str, doc_id: str, now: datetime) -> None:
+async def purge_document_content(session: AsyncSession, org_id: str, doc_id: str, now: datetime) -> bool:
     """Deletes the S3 original + every page preview ("page previews follow originals")
     and nulls the DB's content-bearing columns. The document ROW survives, deleted_at
     marking it — same soft-delete shape as every other content purge in this codebase,
-    never a hard DELETE of the row itself."""
+    never a hard DELETE of the row itself. Returns False (no-op) if the document turns
+    out to be on legal hold.
+
+    Security self-review finding (TOCTOU): callers (find_documents_eligible_for_purge /
+    find_documents_eligible_for_offboarding_purge) check legal_hold once, up front, then
+    hand over a list of doc_ids — a multi-document sweep can take long enough for a hold
+    to be placed on a later document in that list after the eligibility query already
+    ran. Re-checking here, immediately before destroying anything, closes that window."""
     document = await session.get(Document, doc_id)
     if document is None:
         raise NotFoundError("Document not found")
+    if document.legal_hold:
+        return False
+    if document.request_id is not None:
+        request = await session.get(RecordsRequest, document.request_id)
+        if request is not None and request.legal_hold:
+            return False
 
     store = get_store()
     sha256_at_purge = document.content_sha256
@@ -90,13 +103,16 @@ async def purge_document_content(session: AsyncSession, org_id: str, doc_id: str
         metadata={"purged_at": now.isoformat(), "sha256_at_purge": sha256_at_purge, "filename": document.filename},
     )
     await session.flush()
+    return True
 
 
 async def run_retention_sweep(session: AsyncSession, org: Organization, now: datetime) -> int:
     doc_ids = await find_documents_eligible_for_purge(session, org, now)
+    purged_count = 0
     for doc_id in doc_ids:
-        await purge_document_content(session, org.id, doc_id, now)
-    return len(doc_ids)
+        if await purge_document_content(session, org.id, doc_id, now):
+            purged_count += 1
+    return purged_count
 
 
 @dataclass

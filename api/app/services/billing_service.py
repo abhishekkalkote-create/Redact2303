@@ -68,6 +68,15 @@ async def _apply_billing_event(session: AsyncSession, event: BillingEvent) -> No
 
     if event.invoice:
         await _upsert_invoice(session, org.id, event.invoice)
+        # Security self-review finding: this must fire for ANY event carrying invoice
+        # data, not just the 4 known event types below — an invoice write with zero
+        # audit trail (e.g. a future/unrecognized event type that also happens to carry
+        # `invoice`) would be a financial record change nobody could later account for.
+        await write_audit_event(
+            session, org_id=org.id, actor_type="system", actor_id="billing_provider",
+            action="billing.invoice_recorded", object_type="organization", object_id=org.id,
+            metadata={"event_type": event.type, "invoice_status": event.invoice.status},
+        )
 
     action = _AUDIT_ACTION_BY_EVENT_TYPE.get(event.type)
     if action:

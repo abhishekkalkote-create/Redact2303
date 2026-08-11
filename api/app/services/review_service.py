@@ -16,6 +16,7 @@ from app.models.organization import Organization
 from app.models.redaction_candidate import RedactionCandidate
 from app.models.review_action import ReviewAction
 from app.services.audit_service import write_audit_event
+from app.services.exemption_service import require_exemption_code_in_org
 
 
 async def get_manifest_by_doc(session: AsyncSession, doc_id: str) -> Manifest:
@@ -50,6 +51,7 @@ async def patch_candidate(
     before = {"state": candidate.state, "exemption_code_id": candidate.exemption_code_id, "bbox": candidate.bbox}
 
     if exemption_code_id is not None:
+        await require_exemption_code_in_org(session, exemption_code_id)
         candidate.exemption_code_id = exemption_code_id
     if bbox is not None:
         candidate.bbox = bbox
@@ -100,6 +102,7 @@ async def create_manual_candidate(
     text: str,
     note: str | None,
 ) -> RedactionCandidate:
+    await require_exemption_code_in_org(session, exemption_code_id)
     cipher = get_cipher()
     candidate = RedactionCandidate(
         id=new_id("cand"), org_id=org_id, doc_id=doc_id, page_no=page_no, bbox=bbox,
@@ -146,6 +149,8 @@ async def bulk_update_candidates(
         raise ApiError(422, "Unprocessable Entity", "bulk action must be 'approve' or 'reject'")
     if action == "approve" and not exemption_code_id:
         raise ApiError(422, "Unprocessable Entity", "exemption_code_id is required to bulk-approve")
+    if exemption_code_id:
+        await require_exemption_code_in_org(session, exemption_code_id)
 
     selectors = [candidate_ids, recurrence_group_id, confidence]
     if sum(s is not None for s in selectors) != 1:

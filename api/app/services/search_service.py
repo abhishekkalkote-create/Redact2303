@@ -14,6 +14,7 @@ from app.models.document import Document
 from app.models.redaction_candidate import RedactionCandidate
 from app.pipeline.extract import extract_pdf, span_to_bbox
 from app.services.audit_service import write_audit_event
+from app.services.exemption_service import require_exemption_code_in_org
 from app.services.review_service import get_manifest_by_doc
 from app.storage import get_store
 
@@ -36,6 +37,7 @@ async def search_and_redact(
         raise ApiError(422, "Unprocessable Entity", f"scope must be one of {VALID_SCOPES} (request scope is Phase 3)")
     if scope == "page" and page_no is None:
         raise ApiError(422, "Unprocessable Entity", "page_no is required when scope=page")
+    await require_exemption_code_in_org(session, exemption_code_id)
 
     document = await session.get(Document, doc_id)
     if document is None:

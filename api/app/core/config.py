@@ -1,6 +1,20 @@
 from functools import lru_cache
+from typing import Self
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Security self-review finding: dev_auth_secret and local_dev_encryption_key are already
+# unreachable outside env == "local" by construction (auth/deps.py only consults
+# dev_auth_secret when env == "local"; crypto/envelope.py's get_cipher() never selects
+# LocalDevCipher outside "local"). certificate_signing_key and internal_cron_secret have
+# no equivalent code-level gate — Settings._forbid_insecure_defaults_outside_local below
+# is that gate, failing loud at startup instead of silently running a prod deploy with a
+# publicly-known signing key / cron secret.
+_INSECURE_DEFAULTS = {
+    "certificate_signing_key": "dev-only-insecure-certificate-signing-key-change-me",
+    "internal_cron_secret": "dev-only-insecure-cron-secret-change-me",
+}
 
 
 class Settings(BaseSettings):
@@ -63,6 +77,17 @@ class Settings(BaseSettings):
     # prod value belongs in Secrets Manager, not committed. This placeholder is public
     # and protects nothing.
     internal_cron_secret: str = "dev-only-insecure-cron-secret-change-me"
+
+    @model_validator(mode="after")
+    def _forbid_insecure_defaults_outside_local(self) -> Self:
+        if self.env != "local":
+            for field, default in _INSECURE_DEFAULTS.items():
+                if getattr(self, field) == default:
+                    raise ValueError(
+                        f"{field} is still the checked-in insecure default outside env=='local' — "
+                        f"set a real value via the {field.upper()} environment variable before deploying."
+                    )
+        return self
 
     @property
     def cognito_configured(self) -> bool:
