@@ -9,6 +9,7 @@ from app.core.errors import (
     unhandled_error_handler,
     validation_error_handler,
 )
+from app.core.logging import configure_logging
 from app.routers import (
     audit,
     auth,
@@ -34,6 +35,7 @@ from app.routers import (
 )
 
 settings = get_settings()
+configure_logging(settings.log_level)
 
 app = FastAPI(
     title=settings.app_name,

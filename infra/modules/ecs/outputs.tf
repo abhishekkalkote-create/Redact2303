@@ -2,6 +2,13 @@ output "cluster_name" {
   value = aws_ecs_cluster.this.name
 }
 
+# infra/modules/alerting's rls_violation / export.integrity_failed log-based metric
+# filters (app/core/logging.py's JSON lines land here via the awslogs driver) run
+# against this log group.
+output "api_log_group_name" {
+  value = aws_cloudwatch_log_group.api.name
+}
+
 output "api_service_name" {
   value = aws_ecs_service.api.name
 }

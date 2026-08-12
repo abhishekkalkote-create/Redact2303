@@ -24,6 +24,8 @@ alarm below publishes to:
 | `<env>-api-5xx-rate` / `<env>-web-5xx-rate` | ALB-reported 5xx responses ≥ threshold in 5 min | Deploy regression, DB connectivity loss, unhandled exception path | Check the service's CloudWatch Logs; roll back the most recent deploy if it correlates |
 | `<env>-api-p95-latency` / `<env>-web-p95-latency` | ALB target response time p95 ≥ threshold | DB contention, a slow query path, resource exhaustion | Check ECS CPU/memory alarms first (below) — if those are also firing, it's capacity, not a query regression |
 | `<env>-<service>-cpu-high` / `<env>-<service>-memory-high` | ECS service CPU/memory ≥ 85% sustained | Under-provisioned service, a leak, or a genuine traffic spike | Scale `desired_count` immediately to buy time; investigate after |
+| `<env>-rls-violation` | A write was blocked by a Row-Level Security policy (`app/core/errors.py` logs `event=rls_violation`, content-free — table/policy metadata only, no row data) | A real cross-tenant write attempt, or an app bug writing under the wrong org context | Treat as the SEV-1 tenant-isolation bar (§3, item 4) until ruled out — this is never routine, even once ruled a bug and not an attack |
+| `<env>-integrity-verifier-failure` | An export was blocked by the integrity verifier (`app/services/export_service.py` logs `event=export.integrity_failed`, a failed-check count only — never the leaked text itself) | A redaction didn't burn in cleanly, or the same text appears elsewhere in the document uncaught (see `load-test/README.md`'s search-and-redact finding) | Pull the document's `export.integrity_failed` audit event (has the full check detail, RLS-scoped) to see which check failed; this blocks that one export, it doesn't corrupt anything — no rush to bypass it, every rush to understand why |
 
 Every alarm's own `alarm_description` (visible in the CloudWatch console) restates this
 same guidance so it's available at 3am without this doc open.
@@ -73,13 +75,13 @@ own §9:
 - **No rotation schedule exists.** There's no team large enough yet to rotate across —
   this document describes the escalation *policy* a rotation would follow, not an actual
   calendar.
-- **RLS-policy-violation and integrity-verifier-failure alarms — the two specs/02
-  explicitly names — are not built.** Both need something to alarm on that doesn't exist:
-  the application has no structured logging at all (`grep -r "import logging" api/app/`
-  returns nothing), so there's no log line to write a CloudWatch Logs metric filter
-  against, and Aurora's log export to CloudWatch isn't enabled either. Adding structured
-  logging to the app is its own piece of work — flagged here as the concrete prerequisite
-  for closing this specific gap, not deferred silently.
+- ~~RLS-policy-violation and integrity-verifier-failure alarms — the two specs/02
+  explicitly names — are not built.~~ Closed: `app/core/logging.py` added structured
+  JSON logging, `app/core/errors.py` and `app/services/export_service.py` now emit the
+  two events, and `infra/modules/alerting` has log-based metric filters + alarms for both
+  (rows added to the table in §2 above). What's still missing is everything upstream of
+  the app: Aurora's log export to CloudWatch still isn't enabled, and there's no real AWS
+  account for any of this to run against yet — see the next bullet.
 - **None of this has been applied to real AWS.** Same as the DR runbook: `infra/envs/`
   has only `dev/`, and nothing in this repo has ever run `terraform apply` against a real
   account. `terraform validate` passes; that's the only verification possible without one.

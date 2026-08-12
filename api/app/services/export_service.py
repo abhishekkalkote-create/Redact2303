@@ -1,3 +1,4 @@
+import logging
 from dataclasses import asdict
 from datetime import UTC, datetime
 
@@ -32,6 +33,8 @@ from app.services.webhook_service import trigger_event
 from app.storage import get_store
 
 DEFAULT_EXPORT_TYPES = ("clean_pdf", "exemption_log_csv", "certificate_pdf")
+
+logger = logging.getLogger(__name__)
 
 
 async def create_export(
@@ -72,6 +75,22 @@ async def create_export(
 
     integrity = verify_integrity(clean, approved_boxes, redacted_texts)
     if not integrity.passed:
+        # specs/02-architecture.md § Observability: "integrity-verifier failure (blocks
+        # export, pages on-call)" — a count, not integrity.checks itself: those strings can
+        # contain the actual leftover/leaked redacted text (see verify_integrity's own
+        # "FAIL: ... still contains text: {leftover!r}" format), which must never reach a
+        # shared infra log (CLAUDE.md invariant #6), unlike the audit_events row below —
+        # that one's RLS-scoped and encrypted at rest, a different trust boundary than
+        # CloudWatch.
+        logger.warning(
+            "export.integrity_failed",
+            extra={
+                "event": "export.integrity_failed",
+                "org_id": org_id,
+                "doc_id": doc_id,
+                "failed_check_count": sum(1 for c in integrity.checks if c.startswith("FAIL")),
+            },
+        )
         await write_audit_event(
             session, org_id=org_id, actor_type="system", actor_id=user_id,
             action="export.integrity_failed", object_type="document", object_id=doc_id,

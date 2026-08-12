@@ -103,6 +103,7 @@ module "alerting" {
   alb_arn_suffix              = module.ecs.alb_arn_suffix
   api_target_group_arn_suffix = module.ecs.api_target_group_arn_suffix
   web_target_group_arn_suffix = module.ecs.web_target_group_arn_suffix
+  api_log_group_name          = module.ecs.api_log_group_name
 
   pagerduty_integration_email = var.pagerduty_integration_email
 

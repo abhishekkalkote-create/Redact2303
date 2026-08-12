@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     env: str = "local"  # local | dev | staging | prod
     app_name: str = "RedactProof API"
     api_v1_prefix: str = "/v1"
+    log_level: str = "INFO"
 
     database_url: str = "postgresql+asyncpg://redactproof:redactproof@localhost:5432/redactproof"
 

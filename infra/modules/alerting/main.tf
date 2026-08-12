@@ -11,15 +11,15 @@
 # - ECS CPU/memory alarms are included too — not in the spec's own alarm list, but a
 #   standard, free health signal on the same services, so on-call isn't flying blind on
 #   basic capacity issues while the metrics above are the ones actually named.
-# - RLS-policy-violation and integrity-verifier-failure alarms are NOT built here. Both
-#   need something to alarm ON that doesn't exist yet: the app has no structured logging
-#   at all (grep app/ for `import logging` — nothing), so there's no log-based metric
-#   filter to write, and Aurora's own log export to CloudWatch isn't enabled either. This
-#   is a real prerequisite gap, not a "coming soon" — adding a hollow alarm on a metric
-#   that will never emit would be worse than no alarm, same reasoning as
-#   docs/ai-transparency-one-pager.pdf's "not yet available" sections. Building app-level
-#   structured logging is its own piece of work, separate from wiring alarms once it
-#   exists.
+# - RLS-policy-violation and integrity-verifier-failure alarms ARE built, via log-based
+#   metric filters against the API log group — app/core/logging.py now emits a single
+#   JSON line per record, and app/core/errors.py's unhandled_error_handler /
+#   app/services/export_service.py's create_export log an {"event": "rls_violation"} /
+#   {"event": "export.integrity_failed"} line at exactly the moment specs/02 wants an
+#   alarm. Neither log call includes the underlying content that made the event fire (see
+#   both call sites' own docstrings/comments) — only counts and IDs, so this stays
+#   content-free even feeding a metric filter on a log group anyone with CloudWatch
+#   access to this AWS account could otherwise read.
 # - The on-call ROTATION itself (who's on call, escalation policy, schedule) needs an
 #   actual paging vendor account this repo doesn't have. What this module DOES provide is
 #   the one vendor-account-free bridge to one: an SNS topic every alarm publishes to, plus
@@ -149,6 +149,67 @@ resource "aws_cloudwatch_metric_alarm" "ecs_memory_high" {
   period              = 300
   evaluation_periods  = 3
   threshold           = var.ecs_memory_high_threshold_percent
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+  ok_actions          = [aws_sns_topic.alerts.arn]
+  tags                = var.tags
+}
+
+# --- RLS policy violation attempts + integrity-verifier failure: log-based metric
+# filters against app/core/logging.py's JSON lines (see module docstring above) ---
+
+resource "aws_cloudwatch_log_metric_filter" "rls_violation" {
+  name           = "${var.name}-rls-violation"
+  log_group_name = var.api_log_group_name
+  pattern        = "{ $.event = \"rls_violation\" }"
+
+  metric_transformation {
+    name      = "RlsViolationCount"
+    namespace = "${var.name}/Security"
+    value     = "1"
+    unit      = "Count"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "rls_violation" {
+  alarm_name          = "${var.name}-rls-violation"
+  alarm_description   = "A write was blocked by a Row-Level Security policy — either a real cross-tenant attempt or an app bug writing with the wrong org context. Treat as the SEV-1 tenant-isolation bar (docs/on-call-runbook.md §3) until ruled out, not routine noise."
+  namespace           = aws_cloudwatch_log_metric_filter.rls_violation.metric_transformation[0].namespace
+  metric_name         = aws_cloudwatch_log_metric_filter.rls_violation.metric_transformation[0].name
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = var.rls_violation_count_threshold
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+  ok_actions          = [aws_sns_topic.alerts.arn]
+  tags                = var.tags
+}
+
+resource "aws_cloudwatch_log_metric_filter" "integrity_verifier_failure" {
+  name           = "${var.name}-integrity-verifier-failure"
+  log_group_name = var.api_log_group_name
+  pattern        = "{ $.event = \"export.integrity_failed\" }"
+
+  metric_transformation {
+    name      = "IntegrityVerifierFailureCount"
+    namespace = "${var.name}/Security"
+    value     = "1"
+    unit      = "Count"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "integrity_verifier_failure" {
+  alarm_name          = "${var.name}-integrity-verifier-failure"
+  alarm_description   = "An export was blocked by the integrity verifier (specs/05-redaction-pipeline.md Stage 7) — a redaction didn't burn in cleanly. Not a routine failure: this is the last gate before a document would otherwise leave with recoverable content."
+  namespace           = aws_cloudwatch_log_metric_filter.integrity_verifier_failure.metric_transformation[0].namespace
+  metric_name         = aws_cloudwatch_log_metric_filter.integrity_verifier_failure.metric_transformation[0].name
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = var.integrity_verifier_failure_count_threshold
   comparison_operator = "GreaterThanOrEqualToThreshold"
   treat_missing_data  = "notBreaching"
   alarm_actions       = [aws_sns_topic.alerts.arn]

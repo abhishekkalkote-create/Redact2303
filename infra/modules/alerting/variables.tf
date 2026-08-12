@@ -43,6 +43,16 @@ variable "web_target_group_arn_suffix" {
   type = string
 }
 
+variable "api_log_group_name" {
+  description = <<-EOT
+    module.ecs.api_log_group_name — where app/core/logging.py's JSON lines land via the
+    awslogs driver. Feeds the rls_violation / export.integrity_failed log-based metric
+    filters (see main.tf) — the two specs/02-architecture.md alarms that had no metric to
+    alarm on before app/core/logging.py existed.
+  EOT
+  type        = string
+}
+
 # --- Where alarms page (the piece this repo can't wire up on its own — see main.tf) ---
 
 variable "pagerduty_integration_email" {
@@ -93,4 +103,16 @@ variable "ecs_cpu_high_threshold_percent" {
 variable "ecs_memory_high_threshold_percent" {
   type    = number
   default = 85
+}
+
+variable "rls_violation_count_threshold" {
+  description = "Any occurrence pages on-call (specs/02-architecture.md's own wording for this alarm)."
+  type        = number
+  default     = 1
+}
+
+variable "integrity_verifier_failure_count_threshold" {
+  description = "Any occurrence pages on-call (specs/02-architecture.md's own wording for this alarm) — a blocked export is not routine."
+  type        = number
+  default     = 1
 }
