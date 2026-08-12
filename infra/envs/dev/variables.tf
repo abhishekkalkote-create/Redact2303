@@ -33,3 +33,9 @@ variable "worker_image" {
   type    = string
   default = ""
 }
+
+variable "pagerduty_integration_email" {
+  description = "See infra/modules/alerting/variables.tf — empty until a paging vendor account exists."
+  type        = string
+  default     = ""
+}

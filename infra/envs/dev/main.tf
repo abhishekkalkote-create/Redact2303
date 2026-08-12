@@ -90,3 +90,21 @@ module "edge" {
   alb_dns_name = module.ecs.alb_dns_name
   domain_name  = var.domain_name
 }
+
+module "alerting" {
+  source = "../../modules/alerting"
+  name   = local.name
+
+  dlq_names                   = module.queues.dlq_names
+  ecs_cluster_name            = module.ecs.cluster_name
+  api_service_name            = module.ecs.api_service_name
+  web_service_name            = module.ecs.web_service_name
+  worker_service_name         = module.ecs.worker_service_name
+  alb_arn_suffix              = module.ecs.alb_arn_suffix
+  api_target_group_arn_suffix = module.ecs.api_target_group_arn_suffix
+  web_target_group_arn_suffix = module.ecs.web_target_group_arn_suffix
+
+  pagerduty_integration_email = var.pagerduty_integration_email
+
+  tags = { Env = var.env }
+}
