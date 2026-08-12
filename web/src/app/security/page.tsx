@@ -59,10 +59,20 @@ export default function SecurityPage() {
 
           <Section title="Identity &amp; access">
             <ul className="list-disc pl-5">
-              <li>Multi-factor authentication available to every user, enforceable by org policy (default on for new orgs).</li>
-              <li>FIDO2/WebAuthn support; no SMS one-time codes, which don&rsquo;t meet phishing-resistance guidance.</li>
-              <li>Enterprise SSO (SAML/OIDC) for organization-level federation.</li>
-              <li>Session policy is org-configurable; sessions revoke immediately on role change or deactivation.</li>
+              <li>
+                Multi-factor authentication (TOTP authenticator apps) configured at the identity-provider level,
+                org-enforceable, default on for new orgs. No SMS one-time codes, which don&rsquo;t meet
+                phishing-resistance guidance.
+              </li>
+              <li>
+                Authorization is re-checked on every request against your org&rsquo;s own membership records, not
+                cached in a token — a role change or deactivation takes effect on the very next request, not at
+                next login.
+              </li>
+              <li className="flex items-center gap-2">
+                <Badge variant="outline">planned</Badge> FIDO2/WebAuthn passkeys and Enterprise SSO (SAML/OIDC) —
+                not yet built.
+              </li>
             </ul>
           </Section>
 
@@ -108,28 +118,41 @@ export default function SecurityPage() {
               a human reviews and decides on every redaction before it&rsquo;s exported.
             </p>
             <p className="flex items-center gap-2">
-              AI transparency one-pager (model inventory, accuracy report, bias testing summary):
-              <Badge variant="outline">not yet published</Badge>
+              AI transparency statement (model inventory, data flow, human-in-the-loop guarantee, accuracy and
+              bias-testing status):{" "}
+              <a href="/ai-transparency-one-pager.pdf" className="text-primary underline underline-offset-2">
+                download PDF
+              </a>
             </p>
           </Section>
 
           <Section title="CJIS alignment">
             <p>
-              Built against the CJIS Security Policy from day one: FIPS-validated encryption, phishing-resistant
-              MFA, one-year-plus audit retention, media sanitization on deletion, and US-only infrastructure and
+              Built against the CJIS Security Policy from day one: FIPS-validated encryption, TOTP MFA (SMS
+              explicitly excluded — WebAuthn/passkey support for full phishing resistance is planned, not yet
+              built), one-year-plus audit retention, media sanitization on deletion, and US-only infrastructure and
               support staff. CJIS has no central certification — we maintain a control-to-evidence mapping and
               sign the CJIS Security Addendum per agency as needed.
             </p>
           </Section>
 
           <Section title="Compliance status">
-            <p>Honest status, not aspirational marketing:</p>
-            <ul className="list-disc pl-5">
-              <li>SOC 2 Type II: evidence collection in progress.</li>
-              <li>GovRAMP Security Snapshot: submitted.</li>
-              <li>GovRAMP Ready/Authorized, TX-RAMP, FedRAMP 20x: on the roadmap, not yet started.</li>
+            <p>Honest status, not aspirational marketing — nothing below is claimed until it&rsquo;s actually true:</p>
+            <ul className="flex flex-col gap-1.5">
+              <li className="flex items-center gap-2">
+                <Badge variant="outline">not started</Badge> SOC 2 Type II — evidence collection begins once a
+                production environment exists to collect evidence from.
+              </li>
+              <li className="flex items-center gap-2">
+                <Badge variant="outline">not started</Badge> GovRAMP Security Snapshot — architecture is designed
+                to cover the top-40 NIST controls it checks; submission itself hasn&rsquo;t happened yet.
+              </li>
+              <li className="flex items-center gap-2">
+                <Badge variant="outline">roadmap</Badge> GovRAMP Ready/Authorized, TX-RAMP, FedRAMP 20x — not
+                started.
+              </li>
             </ul>
-            <p>We&rsquo;ll update this page as each milestone actually lands.</p>
+            <p>We&rsquo;ll update this page as each milestone actually lands, not before.</p>
           </Section>
         </div>
       </div>

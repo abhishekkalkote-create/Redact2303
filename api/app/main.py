@@ -38,6 +38,13 @@ settings = get_settings()
 app = FastAPI(
     title=settings.app_name,
     version="0.1.0",
+    description=(
+        "AI-assisted, human-verified document redaction. Every endpoint below is org-scoped: "
+        "authenticate with `POST /v1/auth/dev-login` (local/dev only) or a real Cognito token, "
+        "then pass it as `Authorization: Bearer <token>`. Multi-org users additionally pass "
+        "`X-Org-Id` to select which org a request applies to. See the docs site "
+        "(redactproof.com/docs) for a narrative walkthrough of the upload -> review -> export flow."
+    ),
     openapi_url="/v1/openapi.json",
     docs_url="/v1/docs",
 )
