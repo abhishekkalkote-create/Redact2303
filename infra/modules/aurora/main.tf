@@ -10,7 +10,7 @@ resource "aws_db_subnet_group" "this" {
 
 resource "aws_security_group" "db" {
   name_prefix = "${var.name}-db-"
-  description = "Aurora PostgreSQL — ingress only from the app security group"
+  description = "Aurora PostgreSQL - ingress only from the app security group"
   vpc_id      = var.vpc_id
   tags        = var.tags
 

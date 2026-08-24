@@ -17,7 +17,8 @@ variable "app_security_group_ids" {
 
 variable "engine_version" {
   type    = string
-  default = "16.6"
+  default = "16.14" # AWS retires old minor versions; check available versions with
+  # `aws rds describe-db-engine-versions --engine aurora-postgresql` if this stops working.
 }
 
 variable "min_acu" {

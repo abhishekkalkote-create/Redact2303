@@ -51,7 +51,7 @@ resource "aws_security_group" "alb" {
 
 resource "aws_security_group" "app" {
   name_prefix = "${var.name}-app-"
-  description = "api + web tasks — ingress only from the ALB"
+  description = "api + web tasks - ingress only from the ALB"
   vpc_id      = var.vpc_id
   tags        = var.tags
 
@@ -216,7 +216,11 @@ resource "aws_iam_role" "task" {
 }
 
 resource "aws_iam_role_policy_attachment" "task_extra" {
-  for_each   = toset(var.task_role_policy_arns)
+  # Keyed by index (known at plan time) rather than toset() of the ARNs
+  # themselves — the ARNs come from policies created earlier in this same
+  # plan, so their values aren't known until apply, and for_each requires
+  # its *keys* be known at plan time even when values aren't.
+  for_each   = { for idx, arn in var.task_role_policy_arns : tostring(idx) => arn }
   role       = aws_iam_role.task.name
   policy_arn = each.value
 }

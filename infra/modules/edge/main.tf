@@ -10,7 +10,7 @@
 
 resource "aws_wafv2_web_acl" "this" {
   name        = var.name
-  description = "${var.name} edge WAF — managed rules + rate limiting"
+  description = "${var.name} edge WAF - managed rules + rate limiting"
   scope       = "CLOUDFRONT"
 
   default_action {
@@ -123,7 +123,9 @@ resource "aws_cloudfront_distribution" "this" {
     cloudfront_default_certificate = var.domain_name == "" ? true : null
     acm_certificate_arn            = var.domain_name == "" ? null : var.cloudfront_certificate_arn
     ssl_support_method             = var.domain_name == "" ? null : "sni-only"
-    minimum_protocol_version       = "TLSv1.2_2021"
+    # AWS forces TLSv1 (and rejects anything else) when using the shared default
+    # *.cloudfront.net certificate; TLSv1.2_2021 only applies once a real ACM cert exists.
+    minimum_protocol_version = var.domain_name == "" ? "TLSv1" : "TLSv1.2_2021"
   }
 
   tags = var.tags

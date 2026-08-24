@@ -40,6 +40,7 @@ variable "api_image" {
   description = "Placeholder until CI publishes a real image to ECR (see .github/workflows/deploy.yml)"
   type        = string
   default     = "public.ecr.aws/docker/library/httpd:2.4"
+  nullable    = false
 }
 variable "api_container_port" {
   type    = number
@@ -69,8 +70,9 @@ variable "api_secrets" {
 
 # --- web ---
 variable "web_image" {
-  type    = string
-  default = "public.ecr.aws/docker/library/httpd:2.4"
+  type     = string
+  default  = "public.ecr.aws/docker/library/httpd:2.4"
+  nullable = false
 }
 variable "web_container_port" {
   type    = number
@@ -95,8 +97,9 @@ variable "web_environment" {
 
 # --- worker ---
 variable "worker_image" {
-  type    = string
-  default = "public.ecr.aws/docker/library/httpd:2.4"
+  type     = string
+  default  = "public.ecr.aws/docker/library/httpd:2.4"
+  nullable = false
 }
 variable "worker_cpu" {
   type    = number
