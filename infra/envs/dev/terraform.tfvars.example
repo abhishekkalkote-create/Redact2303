@@ -1,0 +1,2 @@
+api_image = "231575491003.dkr.ecr.us-east-1.amazonaws.com/redactproof-dev-api:latest"
+web_image = "231575491003.dkr.ecr.us-east-1.amazonaws.com/redactproof-dev-web:latest"

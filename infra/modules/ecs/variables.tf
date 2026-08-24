@@ -18,6 +18,12 @@ variable "private_subnet_ids" {
   type = list(string)
 }
 
+variable "execution_secrets_arns" {
+  description = "Secrets Manager ARNs referenced by api_secrets/web_secrets/worker_secrets - the task EXECUTION role (which injects `secrets` env vars at container start) needs GetSecretValue on these; AmazonECSTaskExecutionRolePolicy alone does not grant it."
+  type        = list(string)
+  default     = []
+}
+
 variable "certificate_arn" {
   description = "ACM cert for the ALB HTTPS listener. Empty until a domain is set up"
   type        = string

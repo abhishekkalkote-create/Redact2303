@@ -1,0 +1,13 @@
+**/node_modules
+**/.next
+**/.git
+**/.venv
+**/venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/.local-storage
+**/.DS_Store
+**/*.tsbuildinfo

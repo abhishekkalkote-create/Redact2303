@@ -29,3 +29,7 @@ output "content_bucket_name" {
 output "sqs_queue_urls" {
   value = module.queues.queue_urls
 }
+
+output "ecr_repository_urls" {
+  value = module.ecr.repository_urls
+}

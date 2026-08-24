@@ -17,6 +17,26 @@ module "queues" {
   name   = local.name
 }
 
+module "ecr" {
+  source           = "../../modules/ecr"
+  name             = local.name
+  repository_names = ["api", "web"]
+  tags             = { Env = var.env }
+}
+
+# api/app/core/config.py refuses to boot outside env=="local" with these fields still at
+# their checked-in-and-public placeholder values. Secret metadata only lives in
+# Terraform/state - the actual value is set out-of-band via `aws secretsmanager
+# put-secret-value` (same reasoning as module.aurora's master_user_secret: keep real
+# secret material out of tfstate).
+resource "aws_secretsmanager_secret" "api_certificate_signing_key" {
+  name = "${local.name}-certificate-signing-key"
+}
+
+resource "aws_secretsmanager_secret" "api_internal_cron_secret" {
+  name = "${local.name}-internal-cron-secret"
+}
+
 module "cognito" {
   source        = "../../modules/cognito"
   name          = local.name
@@ -38,6 +58,10 @@ module "ecs" {
   public_subnet_ids     = module.vpc.public_subnet_ids
   private_subnet_ids    = module.vpc.private_subnet_ids
   task_role_policy_arns = [module.storage.per_org_kms_management_policy_arn]
+  execution_secrets_arns = [
+    aws_secretsmanager_secret.api_certificate_signing_key.arn,
+    aws_secretsmanager_secret.api_internal_cron_secret.arn,
+  ]
 
   api_image = var.api_image != "" ? var.api_image : null
   web_image = var.web_image != "" ? var.web_image : null
@@ -56,6 +80,10 @@ module "ecs" {
     COGNITO_REGION        = var.region
     S3_CONTENT_BUCKET     = module.storage.bucket_name
     CORS_ORIGINS          = var.domain_name == "" ? "[\"http://localhost:3000\"]" : "[\"https://${var.domain_name}\"]"
+  }
+  api_secrets = {
+    CERTIFICATE_SIGNING_KEY = aws_secretsmanager_secret.api_certificate_signing_key.arn
+    INTERNAL_CRON_SECRET    = aws_secretsmanager_secret.api_internal_cron_secret.arn
   }
 
   worker_image = var.worker_image != "" ? var.worker_image : null

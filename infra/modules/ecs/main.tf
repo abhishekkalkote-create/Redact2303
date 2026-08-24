@@ -202,6 +202,23 @@ resource "aws_iam_role_policy_attachment" "task_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+# AmazonECSTaskExecutionRolePolicy grants ECR pull + CloudWatch Logs, but NOT
+# secretsmanager:GetSecretValue - without this, any container_definitions `secrets`
+# entry (api_secrets/web_secrets/worker_secrets) fails at task launch.
+resource "aws_iam_role_policy" "task_execution_secrets" {
+  count = length(var.execution_secrets_arns) > 0 ? 1 : 0
+  name  = "${var.name}-task-execution-secrets"
+  role  = aws_iam_role.task_execution.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "secretsmanager:GetSecretValue"
+      Resource = var.execution_secrets_arns
+    }]
+  })
+}
+
 resource "aws_iam_role" "task" {
   name = "${var.name}-task"
   assume_role_policy = jsonencode({
