@@ -232,6 +232,20 @@ resource "aws_iam_role" "task" {
   tags = var.tags
 }
 
+resource "aws_iam_role_policy" "task_secrets_write" {
+  count = length(var.task_role_secrets_write_arns) > 0 ? 1 : 0
+  name  = "${var.name}-task-secrets-write"
+  role  = aws_iam_role.task.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "secretsmanager:PutSecretValue"
+      Resource = var.task_role_secrets_write_arns
+    }]
+  })
+}
+
 resource "aws_iam_role_policy_attachment" "task_extra" {
   # Keyed by index (known at plan time) rather than toset() of the ARNs
   # themselves — the ARNs come from policies created earlier in this same

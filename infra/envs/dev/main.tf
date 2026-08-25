@@ -37,6 +37,15 @@ resource "aws_secretsmanager_secret" "api_internal_cron_secret" {
   name = "${local.name}-internal-cron-secret"
 }
 
+# Composed asyncpg URL (user:password@host:port/dbname), assembled out-of-band from
+# module.aurora's endpoint + master_user_secret and put here via `aws secretsmanager
+# put-secret-value` - see the ecs<->aurora cycle note below on why this resource is
+# declared here (no dependency on module.aurora's attributes) rather than passed as a
+# direct Terraform reference.
+resource "aws_secretsmanager_secret" "api_database_url" {
+  name = "${local.name}-database-url"
+}
+
 module "cognito" {
   source        = "../../modules/cognito"
   name          = local.name
@@ -47,9 +56,11 @@ module "cognito" {
 
 # ecs.app_security_group_id feeds aurora's ingress rule below, and aurora's connection
 # details would naturally feed back into ecs's container environment — that's a cycle
-# (ecs -> aurora -> ecs). Broken deliberately: DB wiring into api/worker env vars is left
-# as a Phase 1 follow-up (once real images exist to actually configure), not threaded
-# through here. See TODO below.
+# (ecs -> aurora -> ecs). Resolved by NOT threading a direct Terraform reference through:
+# api_secrets.DATABASE_URL points at aws_secretsmanager_secret.api_database_url (declared
+# above, no dependency on module.aurora's attributes), and the actual connection string
+# is assembled out-of-band from module.aurora's endpoint + master_user_secret and written
+# in via `aws secretsmanager put-secret-value` after both modules exist.
 module "ecs" {
   source                = "../../modules/ecs"
   name                  = local.name
@@ -61,17 +72,12 @@ module "ecs" {
   execution_secrets_arns = [
     aws_secretsmanager_secret.api_certificate_signing_key.arn,
     aws_secretsmanager_secret.api_internal_cron_secret.arn,
+    aws_secretsmanager_secret.api_database_url.arn,
   ]
 
   api_image = var.api_image != "" ? var.api_image : null
   web_image = var.web_image != "" ? var.web_image : null
 
-  # TODO(Phase 1, once real images + a deploy pipeline exist): wire DB_HOST/DB_NAME (from
-  # module.aurora) and DB_USER/DB_PASSWORD (from module.aurora.master_user_secret_arn) into
-  # api_environment/api_secrets below. Deferred rather than done now specifically to avoid
-  # the ecs<->aurora cycle noted above — do it via a separate `aws_ecs_task_definition`
-  # revision update outside this same apply, or restructure the app security group to be
-  # created independently of both modules first.
   api_environment = {
     ENV                   = var.env
     AWS_REGION            = var.region
@@ -84,6 +90,7 @@ module "ecs" {
   api_secrets = {
     CERTIFICATE_SIGNING_KEY = aws_secretsmanager_secret.api_certificate_signing_key.arn
     INTERNAL_CRON_SECRET    = aws_secretsmanager_secret.api_internal_cron_secret.arn
+    DATABASE_URL            = aws_secretsmanager_secret.api_database_url.arn
   }
 
   worker_image = var.worker_image != "" ? var.worker_image : null

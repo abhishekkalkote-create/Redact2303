@@ -18,6 +18,12 @@ variable "private_subnet_ids" {
   type = list(string)
 }
 
+variable "task_role_secrets_write_arns" {
+  description = "Secrets Manager ARNs the task ROLE (app code, via boto3 - not the execution role's env-var injection) may PutSecretValue on. Intended for narrow, temporary bootstrap use (e.g. a one-off task rotating its own DB credentials into a secret) - do not leave populated as standing app permission."
+  type        = list(string)
+  default     = []
+}
+
 variable "execution_secrets_arns" {
   description = "Secrets Manager ARNs referenced by api_secrets/web_secrets/worker_secrets - the task EXECUTION role (which injects `secrets` env vars at container start) needs GetSecretValue on these; AmazonECSTaskExecutionRolePolicy alone does not grant it."
   type        = list(string)
