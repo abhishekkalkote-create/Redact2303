@@ -55,8 +55,35 @@ class IntakeError(ApiError):
         super().__init__(422, "Unprocessable Upload", detail)
 
 
+_OOXML_ENTRY_MARKERS = {
+    "word/document.xml": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "xl/workbook.xml": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "ppt/presentation.xml": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+}
+
+
+def _sniff_ooxml(data: bytes) -> str | None:
+    """libmagic's ability to tell an OOXML document (docx/xlsx/pptx - themselves zip
+    archives) apart from a plain zip depends on the installed magic database version;
+    older/minimal ones (e.g. a fresh CI runner's default libmagic1) fall back to the
+    generic `application/zip`. OOXML's container format guarantees one of these entry
+    paths, so check directly instead of trusting libmagic alone for this ambiguity."""
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as archive:
+            names = set(archive.namelist())
+    except zipfile.BadZipFile:
+        return None
+    for marker, mime_type in _OOXML_ENTRY_MARKERS.items():
+        if marker in names:
+            return mime_type
+    return None
+
+
 def sniff_mime(data: bytes) -> str:
-    return magic.from_buffer(data, mime=True)
+    mime_type = magic.from_buffer(data, mime=True)
+    if mime_type in ZIP_MIME_TYPES:
+        return _sniff_ooxml(data) or mime_type
+    return mime_type
 
 
 def is_zip_mime(mime_type: str) -> bool:
@@ -129,7 +156,7 @@ def validate_and_scan(data: bytes, settings: Settings | None = None) -> str:
     if len(data) > settings.max_upload_size_bytes:
         raise IntakeError(f"File exceeds the {settings.max_upload_size_bytes} byte limit")
 
-    mime_type = magic.from_buffer(data, mime=True)
+    mime_type = sniff_mime(data)
     if mime_type not in ACCEPTED_MIME_TYPES:
         hint = OFFICE_MIME_HINTS.get(mime_type)
         if hint:

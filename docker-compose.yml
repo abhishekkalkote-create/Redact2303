@@ -2,16 +2,18 @@ services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_USER: redactproof
-      POSTGRES_PASSWORD: redactproof
-      POSTGRES_MULTIPLE_DATABASES: redactproof,redactproof_test
+      # postgres_admin is the cluster bootstrap superuser - used only to create the
+      # actual app role (infra/local/init-app-role.sh); the API/tests never connect as
+      # it. See that script's header comment for why.
+      POSTGRES_USER: postgres_admin
+      POSTGRES_PASSWORD: postgres_admin
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./infra/local/init-multi-db.sh:/docker-entrypoint-initdb.d/init-multi-db.sh
+      - ./infra/local/init-app-role.sh:/docker-entrypoint-initdb.d/init-app-role.sh
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U redactproof"]
+      test: ["CMD-SHELL", "pg_isready -U postgres_admin"]
       interval: 5s
       timeout: 5s
       retries: 10

@@ -15,15 +15,19 @@ jobs:
     name: API — lint, typecheck, test (incl. RLS matrix)
     runs-on: ubuntu-latest
     services:
+      # POSTGRES_USER here is the cluster's bootstrap superuser - used ONLY to create the
+      # actual app role below. Postgres refuses `ALTER ROLE ... NOSUPERUSER` on the
+      # bootstrap user itself ("the bootstrap user must have the SUPERUSER attribute"),
+      # and RLS/REVOKE (migration 0002's _append_only()) are unconditionally bypassed for
+      # superusers - so the app must run as a separate, ordinary role, never as this one.
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: redactproof
-          POSTGRES_PASSWORD: redactproof
-          POSTGRES_DB: redactproof_test
+          POSTGRES_USER: postgres_admin
+          POSTGRES_PASSWORD: postgres_admin
         ports: ["5432:5432"]
         options: >-
-          --health-cmd "pg_isready -U redactproof"
+          --health-cmd "pg_isready -U postgres_admin"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -43,6 +47,21 @@ jobs:
 
       - run: ruff check .
       - run: mypy app
+
+      - name: Create the non-superuser app role + test database
+        # redactproof must be an ordinary role - not the bootstrap superuser above - for
+        # RLS and migration 0002's REVOKE to mean anything at all in this CI run. Same
+        # role app/core/config.py's Settings.database_url default already names
+        # (api/.env.example), so nothing downstream needs to change.
+        env:
+          PGPASSWORD: postgres_admin
+        run: |
+          psql -h localhost -U postgres_admin -d postgres -v ON_ERROR_STOP=1 -c \
+            "CREATE ROLE redactproof WITH LOGIN PASSWORD 'redactproof';"
+          psql -h localhost -U postgres_admin -d postgres -v ON_ERROR_STOP=1 -c \
+            "CREATE DATABASE redactproof_test OWNER redactproof;"
+          psql -h localhost -U postgres_admin -d redactproof_test -v ON_ERROR_STOP=1 -c \
+            "ALTER SCHEMA public OWNER TO redactproof;"
 
       - name: Migrate test database
         env:
