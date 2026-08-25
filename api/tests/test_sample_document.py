@@ -73,7 +73,7 @@ async def test_sample_document_triggers_multiple_exemption_codes(db_session: Asy
 
     # Core PII (SSN/phone/email) -> b(6); Public Safety (CI code, case number) -> 7(D)/7(A).
     assert {"b(6)", "7(D)", "7(A)"} <= codes_found, f"expected multiple exemption codes, got {codes_found}"
-    assert "123-45-6789" in texts_found
+    assert "234-56-7891" in texts_found
     assert "CI-4471" in texts_found
 
 

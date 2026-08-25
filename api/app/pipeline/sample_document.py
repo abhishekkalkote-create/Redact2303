@@ -25,7 +25,7 @@ _LINES = [
     "Case #2024-00987 remains an open, active investigation.",
     "",
     "Reporting officer contacted the complainant, Jane Doe, at (555) 867-5309 or",
-    "jane.doe@example.com. Ms. Doe's Social Security Number on file is 123-45-6789.",
+    "jane.doe@example.com. Ms. Doe's Social Security Number on file is 234-56-7891.",
     "",
     "Witness Jane Doe stated that she observed the incident from her front porch.",
     "",

@@ -192,8 +192,6 @@ async def bulk_update_candidates(
             metadata={"bulk_count": len(updated), "selector": "recurrence_group" if recurrence_group_id else ("confidence" if confidence else "ids")},
         )
         await session.flush()
-        for c in updated:
-            await session.refresh(c)
     return updated
 
 
