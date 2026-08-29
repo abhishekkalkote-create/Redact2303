@@ -77,6 +77,23 @@ class BedrockProvider(LLMProvider):
         )
 
 
+class DisabledLLMProvider(LLMProvider):
+    """Bedrock isn't configured (bedrock_enabled=false) — used in ANY environment where
+    that's true, not just local (get_provider() below used to fall through to a real
+    BedrockProvider for env != "local" regardless of bedrock_enabled, which raises
+    immediately since BEDROCK_MODEL_ID is still the placeholder — crashing detection
+    entirely for any document with a llm_context rule active, which every org has by
+    default). Distinct from FakeLLMProvider (that one exists so tests can script
+    specific canned responses); this one always returns zero findings — contextual
+    suggestions are simply absent, same as the LLM never finding anything, rather than
+    the whole pipeline failing."""
+
+    model_id = "disabled-llm-provider"
+
+    def complete(self, system: str, user: str, max_tokens: int = 2048) -> LLMResponse:
+        return LLMResponse(text='{"findings": []}', input_tokens=0, output_tokens=0)
+
+
 class FakeLLMProvider(LLMProvider):
     """Local dev / tests only. Returns pre-programmed responses keyed by a substring match
     against the user prompt, so pipeline tests can exercise chunking/grounding/confidence
@@ -99,6 +116,6 @@ class FakeLLMProvider(LLMProvider):
 
 def get_provider(settings: Settings | None = None) -> LLMProvider:
     settings = settings or get_settings()
-    if settings.env == "local" and not settings.bedrock_enabled:
-        return FakeLLMProvider()
+    if not settings.bedrock_enabled:
+        return FakeLLMProvider() if settings.env == "local" else DisabledLLMProvider()
     return BedrockProvider(settings.aws_region, settings.bedrock_model_id)
