@@ -43,6 +43,10 @@ jobs:
           cache: pip
           cache-dependency-path: api/pyproject.toml
 
+      # app/pipeline/ocr.py's Tesseract fallback path (tests/test_ocr.py) needs the real
+      # binary present - same package installed in api/Dockerfile for the deployed image.
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends tesseract-ocr
+
       - run: pip install -e ".[dev]"
 
       - run: ruff check .

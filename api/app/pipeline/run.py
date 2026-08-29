@@ -277,6 +277,7 @@ async def process_document(session: AsyncSession, org_id: str, doc_id: str, acto
     original_bytes = store.get(org_id, document.s3_key_original)
     pages = extract_pdf(original_bytes)
 
+    ocr_page_count = 0
     for page in pages:
         preview_key = f"previews/{doc_id}/{page.page_no}.png"
         store.put(org_id, preview_key, page.preview_png)
@@ -285,17 +286,21 @@ async def process_document(session: AsyncSession, org_id: str, doc_id: str, acto
                 id=new_id("pg"), doc_id=doc_id, org_id=org_id, page_no=page.page_no,
                 s3_key_preview=preview_key, width=page.width, height=page.height,
                 rotation=page.rotation, has_text_layer=page.has_text_layer,
-                ocr_confidence=None,  # Phase 1: born-digital only, no OCR path yet
+                ocr_confidence=page.ocr_confidence,
             )
         )
+        if page.ocr_confidence is not None:
+            ocr_page_count += 1
 
     document.page_count = len(pages)
-    document.ocr_used = False
+    document.ocr_used = ocr_page_count > 0
     extract_job.status = "succeeded"
     extract_job.ended_at = datetime.now(UTC)
-    extract_job.metrics = {"pages": len(pages)}
+    extract_job.metrics = {"pages": len(pages), "ocr_pages": ocr_page_count}
     if bill_usage:
         await _record_usage(session, org_id, "pages_processed", len(pages), doc_id, extract_job.id)
+        if ocr_page_count:
+            await _record_usage(session, org_id, "ocr_pages", ocr_page_count, doc_id, extract_job.id)
     await session.flush()
 
     document.status = "detecting"

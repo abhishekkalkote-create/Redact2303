@@ -21,6 +21,8 @@ dependencies = [
     "pikepdf>=10.10",
     "presidio-analyzer>=2.2",
     "python-magic>=0.4.27",
+    "pytesseract>=0.3.10",
+    "pillow>=10.0",
     "clamd>=1.0.2",
     "extract-msg>=0.54",
 ]
