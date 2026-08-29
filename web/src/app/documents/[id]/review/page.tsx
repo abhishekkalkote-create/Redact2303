@@ -176,6 +176,22 @@ export default function ReviewPage() {
     refetchManifest();
   }
 
+  const escalate = useCallback(
+    async (candidate: Candidate) => {
+      setActionError(null);
+      const { error } = await api.POST("/v1/candidates/{candidate_id}:escalate", {
+        params: { path: { candidate_id: candidate.id } },
+        body: {},
+      });
+      if (error) {
+        setActionError(problemMessage(error));
+        return;
+      }
+      refetchManifest();
+    },
+    [refetchManifest]
+  );
+
   async function saveJustification(candidate: Candidate, text: string) {
     await api.PATCH("/v1/candidates/{candidate_id}", {
       params: { path: { candidate_id: candidate.id } },
@@ -209,10 +225,11 @@ export default function ReviewPage() {
       if (e.key.toLowerCase() === "a") decide(selected, "approved");
       if (e.key.toLowerCase() === "r") decide(selected, "rejected");
       if (e.key.toLowerCase() === "n") selectNextCandidate();
+      if (e.key.toLowerCase() === "e" && !selected.escalated_at) escalate(selected);
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selected, pageCandidates, selectedId, decide, selectNextCandidate]);
+  }, [selected, pageCandidates, selectedId, decide, escalate, selectNextCandidate]);
 
   async function handleCompleteReview() {
     setActionError(null);
@@ -411,6 +428,15 @@ export default function ReviewPage() {
                 <Button variant="outline" onClick={() => decide(selected, "rejected")}>
                   Reject (R)
                 </Button>
+                {selected.escalated_at ? (
+                  <Badge variant="destructive" title={selected.escalated_note ?? undefined}>
+                    Escalated
+                  </Badge>
+                ) : (
+                  <Button variant="ghost" onClick={() => escalate(selected)}>
+                    Escalate (E)
+                  </Button>
+                )}
               </div>
               {selected.recurrence_group_id && (
                 <div className="rounded border p-2 text-sm">
@@ -438,7 +464,7 @@ export default function ReviewPage() {
           {lowConfidenceUnresolved > 0
             ? `${lowConfidenceUnresolved} low-confidence candidate(s) unresolved`
             : "All low-confidence candidates resolved"}
-          {" · "}Shortcuts: A approve · R reject · N next
+          {" · "}Shortcuts: A approve · R reject · E escalate · N next
         </span>
         {doc.status === "review_complete" && (
           <div className="flex items-center gap-3">
