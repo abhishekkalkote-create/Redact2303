@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { CommandPalette } from "@/components/command-palette";
 import { QueryProvider } from "@/lib/query-provider";
 import "./globals.css";
 
@@ -36,6 +37,7 @@ export default function RootLayout({
           Skip to main content
         </a>
         <QueryProvider>{children}</QueryProvider>
+        <CommandPalette />
       </body>
     </html>
   );
