@@ -1658,6 +1658,17 @@
             "title": "Height",
             "type": "number"
           },
+          "ocr_confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ocr Confidence"
+          },
           "page_no": {
             "title": "Page No",
             "type": "integer"
@@ -1676,7 +1687,8 @@
           "width",
           "height",
           "rotation",
-          "has_text_layer"
+          "has_text_layer",
+          "ocr_confidence"
         ],
         "title": "PageOut",
         "type": "object"

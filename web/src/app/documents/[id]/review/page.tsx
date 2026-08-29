@@ -27,6 +27,11 @@ const STATE_COLOR: Record<string, string> = {
   modified: "border-dotted border-blue-500 bg-blue-500/10",
 };
 
+// specs/05-redaction-pipeline.md Stage 2: "pages < 0.6 flagged... never mark such pages
+// auto-complete" — matches LOW_OCR_CONFIDENCE_THRESHOLD in api/app/services/review_service.py,
+// which actually enforces the block; this just surfaces the same signal to the reviewer.
+const LOW_OCR_CONFIDENCE_THRESHOLD = 0.6;
+
 const EXPORT_TYPES = [
   { key: "clean_pdf", label: "Clean release PDF" },
   { key: "annotated_pdf", label: "Annotated PDF (shows codes)" },
@@ -295,6 +300,7 @@ export default function ReviewPage() {
         <aside className="w-48 overflow-y-auto border-r p-2">
           {pagesQuery.data?.map((p) => {
             const count = (manifestQuery.data?.candidates ?? []).filter((c) => c.page_no === p.page_no).length;
+            const lowOcr = p.ocr_confidence != null && p.ocr_confidence < LOW_OCR_CONFIDENCE_THRESHOLD;
             return (
               <button
                 key={p.page_no}
@@ -302,7 +308,14 @@ export default function ReviewPage() {
                 className={`mb-1 flex w-full items-center justify-between rounded px-2 py-1.5 text-sm ${p.page_no === pageNo ? "bg-neutral-200 dark:bg-neutral-800" : "hover:bg-neutral-100 dark:hover:bg-neutral-900"}`}
               >
                 <span>Page {p.page_no}</span>
-                {count > 0 && <Badge variant="secondary">{count}</Badge>}
+                <span className="flex items-center gap-1">
+                  {lowOcr && (
+                    <Badge variant="destructive" aria-label="Low OCR quality — review manually">
+                      OCR
+                    </Badge>
+                  )}
+                  {count > 0 && <Badge variant="secondary">{count}</Badge>}
+                </span>
               </button>
             );
           })}
@@ -310,6 +323,14 @@ export default function ReviewPage() {
 
         {/* Center: viewer */}
         <section className="flex-1 overflow-auto bg-neutral-100 p-4 dark:bg-neutral-950">
+          {currentPageMeta?.ocr_confidence != null && currentPageMeta.ocr_confidence < LOW_OCR_CONFIDENCE_THRESHOLD && (
+            <div role="status" aria-live="polite" className="mx-auto mb-4 w-fit rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+              <p className="font-medium">
+                Low OCR quality — review manually ({Math.round(currentPageMeta.ocr_confidence * 100)}% confidence).
+                This page cannot be marked complete until reviewed.
+              </p>
+            </div>
+          )}
           {imageUrl && currentPageMeta && (
             <div className="relative mx-auto w-fit">
               {/* eslint-disable-next-line @next/next/no-img-element */}

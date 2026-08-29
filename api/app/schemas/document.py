@@ -148,6 +148,7 @@ class PageOut(BaseModel):
     height: float
     rotation: int
     has_text_layer: bool
+    ocr_confidence: float | None
 
     model_config = {"from_attributes": True}
 

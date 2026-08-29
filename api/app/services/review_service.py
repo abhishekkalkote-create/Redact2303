@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import ApiError, NotFoundError
 from app.core.ids import new_id
 from app.crypto.envelope import get_cipher
-from app.models.document import Document
+from app.models.document import Document, DocumentPage
 from app.models.manifest import Manifest
 from app.models.organization import Organization
 from app.models.redaction_candidate import RedactionCandidate
@@ -195,10 +195,19 @@ async def bulk_update_candidates(
     return updated
 
 
+LOW_OCR_CONFIDENCE_THRESHOLD = 0.6  # specs/05-redaction-pipeline.md Stage 2: "pages < 0.6
+# flagged... never mark such pages auto-complete"
+
+
 async def complete_review(session: AsyncSession, org_id: str, doc_id: str, user_id: str) -> Document:
     """specs/04-api-spec.md POST /documents/{id}/review:complete — validates the
-    completeness checklist (specs/03-data-model.md: zero unresolved low-confidence
-    `suggested` candidates) before advancing document status.
+    completeness checklist before advancing document status:
+    - specs/03-data-model.md: zero unresolved low-confidence `suggested` candidates.
+    - specs/05-redaction-pipeline.md Stage 2: zero pages with ocr_confidence below
+      LOW_OCR_CONFIDENCE_THRESHOLD — a badly-OCR'd page can look "clean" (nothing
+      detected) while actually containing unredacted PII the OCR engine simply failed
+      to read, so this is a hard block, not just a UI hint, same as the candidate check
+      below.
 
     specs/03-data-model.md state machine: if the org has `dual_approval_required`, this
     lands on `awaiting_approval` (a supervisor/admin must call review:approve before
@@ -223,6 +232,22 @@ async def complete_review(session: AsyncSession, org_id: str, doc_id: str, user_
         raise ApiError(
             422, "Unprocessable Entity",
             f"{len(unresolved)} low-confidence candidate(s) still unresolved — review them before completing.",
+        )
+
+    result = await session.execute(
+        select(DocumentPage.page_no).where(
+            DocumentPage.doc_id == doc_id,
+            DocumentPage.ocr_confidence.is_not(None),
+            DocumentPage.ocr_confidence < LOW_OCR_CONFIDENCE_THRESHOLD,
+        )
+    )
+    low_ocr_pages = [row[0] for row in result.all()]
+    if low_ocr_pages:
+        pages_str = ", ".join(str(p) for p in sorted(low_ocr_pages))
+        raise ApiError(
+            422, "Unprocessable Entity",
+            f"Page(s) {pages_str} have low-confidence OCR (<{int(LOW_OCR_CONFIDENCE_THRESHOLD * 100)}%) and must be "
+            "manually reviewed before completing.",
         )
 
     org = await session.get(Organization, org_id)

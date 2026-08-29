@@ -1995,6 +1995,8 @@ export interface components {
             has_text_layer: boolean;
             /** Height */
             height: number;
+            /** Ocr Confidence */
+            ocr_confidence: number | null;
             /** Page No */
             page_no: number;
             /** Rotation */

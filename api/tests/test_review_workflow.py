@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.deps import require_role
 from app.core.errors import ApiError
 from app.core.ids import new_id
-from app.models.document import Document
+from app.models.document import Document, DocumentPage
 from app.models.membership import Membership
 from app.services.export_service import create_export
 from app.services.review_service import approve_document, complete_review, return_document
@@ -126,6 +126,42 @@ async def test_approve_document_rejects_wrong_status(db_session: AsyncSession) -
         with pytest.raises(ApiError) as exc_info:
             await approve_document(db_session, org_id, doc_id, user_id, note=None)
         assert exc_info.value.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_complete_review_blocks_on_low_ocr_confidence_page(db_session: AsyncSession) -> None:
+    org_id, user_id, doc_id = "org_rw_6", "usr_rw_6", new_id("doc")
+    async with db_session.begin():
+        await _seed_org_user_doc(db_session, org_id, user_id, doc_id, dual_approval=False)
+        db_session.add(
+            DocumentPage(doc_id=doc_id, org_id=org_id, page_no=1, has_text_layer=True, ocr_confidence=0.42)
+        )
+
+    async with db_session.begin():
+        await set_org(db_session, org_id)
+        with pytest.raises(ApiError) as exc_info:
+            await complete_review(db_session, org_id, doc_id, user_id)
+        assert exc_info.value.status_code == 422
+        assert "low-confidence OCR" in exc_info.value.detail
+        assert "1" in exc_info.value.detail
+
+
+@pytest.mark.asyncio
+async def test_complete_review_allows_good_ocr_and_born_digital_pages(db_session: AsyncSession) -> None:
+    org_id, user_id, doc_id = "org_rw_7", "usr_rw_7", new_id("doc")
+    async with db_session.begin():
+        await _seed_org_user_doc(db_session, org_id, user_id, doc_id, dual_approval=False)
+        db_session.add_all(
+            [
+                DocumentPage(doc_id=doc_id, org_id=org_id, page_no=1, has_text_layer=True, ocr_confidence=0.91),
+                DocumentPage(doc_id=doc_id, org_id=org_id, page_no=2, has_text_layer=True, ocr_confidence=None),
+            ]
+        )
+
+    async with db_session.begin():
+        await set_org(db_session, org_id)
+        document = await complete_review(db_session, org_id, doc_id, user_id)
+        assert document.status == "review_complete"
 
 
 @pytest.mark.asyncio
