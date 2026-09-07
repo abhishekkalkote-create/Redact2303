@@ -30,6 +30,19 @@ _CONTENT_TYPES = {
     "exemption_log_json": "application/json",
 }
 
+# web/.../review/page.tsx's EXPORT_FILE_INFO mirror - a Content-Disposition header here is
+# defense-in-depth (the review page's own download flow already sets a correct filename
+# client-side via a blob: URL, where this header is never even read), but any future
+# direct link to this endpoint deserves a real filename/extension too, not a bare export id.
+_FILE_SUFFIX_EXT = {
+    "clean_pdf": ("clean", "pdf"),
+    "annotated_pdf": ("annotated", "pdf"),
+    "certificate_pdf": ("certificate", "pdf"),
+    "exemption_log_csv": ("exemption-log", "csv"),
+    "exemption_log_pdf": ("exemption-log", "pdf"),
+    "exemption_log_json": ("exemption-log", "json"),
+}
+
 
 @router.post("/documents/{doc_id}/exports", response_model=list[ExportOut], status_code=201)
 async def export_document(
@@ -60,4 +73,9 @@ async def download_export(export_id: str, db: AsyncSession = Depends(get_org_db)
         raise NotFoundError("Export not found")
     content = get_store().get(artifact.org_id, artifact.s3_key)
     content_type = _CONTENT_TYPES.get(artifact.type, "application/octet-stream")
-    return Response(content=content, media_type=content_type)
+    suffix, ext = _FILE_SUFFIX_EXT.get(artifact.type, (artifact.type, "bin"))
+    filename = f"{artifact.doc_id or artifact.id}-{suffix}.{ext}"
+    return Response(
+        content=content, media_type=content_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
@@ -39,6 +40,25 @@ const EXPORT_TYPES = [
   { key: "certificate_pdf", label: "Redaction certificate" },
 ];
 
+// Every export type maps to a real file extension - artifact.type (e.g. "clean_pdf",
+// "exemption_log_csv") is a schema/routing identifier, not a filename suffix, so using it
+// raw (as this used to) produced downloads like "report.pdf-clean_pdf" with no extension
+// the OS/browser could recognize.
+const EXPORT_FILE_INFO: Record<string, { suffix: string; ext: string }> = {
+  clean_pdf: { suffix: "clean", ext: "pdf" },
+  annotated_pdf: { suffix: "annotated", ext: "pdf" },
+  certificate_pdf: { suffix: "certificate", ext: "pdf" },
+  exemption_log_csv: { suffix: "exemption-log", ext: "csv" },
+  exemption_log_pdf: { suffix: "exemption-log", ext: "pdf" },
+  exemption_log_json: { suffix: "exemption-log", ext: "json" },
+};
+
+function exportFilename(originalFilename: string, artifactType: string): string {
+  const base = originalFilename.replace(/\.[^./\\]+$/, "");
+  const info = EXPORT_FILE_INFO[artifactType];
+  return info ? `${base}-${info.suffix}.${info.ext}` : `${base}-${artifactType}`;
+}
+
 export default function ReviewPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
@@ -56,6 +76,11 @@ export default function ReviewPage() {
   const [exportTypes, setExportTypes] = useState<string[]>(["clean_pdf", "exemption_log_csv", "certificate_pdf"]);
   const [actionError, setActionError] = useState<string | null>(null);
   const [exportResult, setExportResult] = useState<components["schemas"]["ExportOut"][] | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchScope, setSearchScope] = useState<"page" | "document">("document");
+  const [searchCodeId, setSearchCodeId] = useState<string | undefined>(undefined);
+  const [searchStatus, setSearchStatus] = useState<string | null>(null);
+  const [searching, setSearching] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
 
   const docQuery = useQuery({
@@ -121,6 +146,11 @@ export default function ReviewPage() {
   const selected = pageCandidates.find((c) => c.id === selectedId) ?? null;
   const currentPageMeta = pagesQuery.data?.find((p) => p.page_no === pageNo);
 
+  const selectedCodeLabel = useMemo(() => {
+    const code = codesQuery.data?.find((c) => c.id === selected?.exemption_code_id);
+    return code ? `${code.code} — ${code.label}` : undefined;
+  }, [codesQuery.data, selected?.exemption_code_id]);
+
   const lowConfidenceUnresolved = (manifestQuery.data?.candidates ?? []).filter(
     (c) => c.state === "suggested" && c.confidence === "low"
   ).length;
@@ -173,6 +203,65 @@ export default function ReviewPage() {
       setActionError(problemMessage(error));
       return;
     }
+    refetchManifest();
+  }
+
+  async function acceptAllSuggested() {
+    const eligible = (manifestQuery.data?.candidates ?? []).filter(
+      (c) => c.state === "suggested" && c.exemption_code_id
+    );
+    if (eligible.length === 0) return;
+    if (!window.confirm(`Approve all ${eligible.length} suggested candidate(s), each keeping its own AI-suggested exemption code?`)) {
+      return;
+    }
+    setActionError(null);
+    // The bulk endpoint applies one exemption_code_id to the whole batch it's given, and
+    // candidates already carry different AI-suggested codes - grouping by code and firing
+    // one bulk call per group (instead of one call for everything) is what keeps each
+    // candidate's own code intact rather than overwriting all of them with a single code.
+    const groups = new Map<string, string[]>();
+    for (const c of eligible) {
+      const codeId = c.exemption_code_id;
+      if (!codeId) continue;
+      const ids = groups.get(codeId) ?? [];
+      ids.push(c.id);
+      groups.set(codeId, ids);
+    }
+    const results = await Promise.all(
+      Array.from(groups.entries()).map(([exemption_code_id, candidate_ids]) =>
+        api.POST("/v1/documents/{doc_id}/candidates:bulk", {
+          params: { path: { doc_id: docId } },
+          body: { action: "approve", candidate_ids, exemption_code_id },
+        })
+      )
+    );
+    const firstError = results.find((r) => r.error)?.error;
+    if (firstError) setActionError(problemMessage(firstError));
+    refetchManifest();
+  }
+
+  async function handleSearchRedact() {
+    if (!searchQuery.trim() || !searchCodeId) return;
+    setActionError(null);
+    setSearchStatus(null);
+    setSearching(true);
+    const { data, error } = await api.POST("/v1/documents/{doc_id}/search-redact", {
+      params: { path: { doc_id: docId } },
+      body: {
+        query: searchQuery,
+        is_pattern: false,
+        scope: searchScope,
+        page_no: searchScope === "page" ? pageNo : undefined,
+        exemption_code_id: searchCodeId,
+      },
+    });
+    setSearching(false);
+    if (error) {
+      setActionError(problemMessage(error));
+      return;
+    }
+    const count = data?.created.length ?? 0;
+    setSearchStatus(count > 0 ? `Redacted ${count} match(es) for "${searchQuery}".` : `No matches found for "${searchQuery}".`);
     refetchManifest();
   }
 
@@ -301,6 +390,9 @@ export default function ReviewPage() {
           <span className="ml-2 text-xs text-neutral-500">manifest v{manifestQuery.data?.version}</span>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={acceptAllSuggested}>
+            Accept all suggested
+          </Button>
           <Button variant="outline" onClick={handleCompleteReview} disabled={doc.status !== "ready_for_review" && doc.status !== "in_review"}>
             Complete review
           </Button>
@@ -399,7 +491,14 @@ export default function ReviewPage() {
                   value={selected.exemption_code_id ?? undefined}
                   onValueChange={(v) => v && updateCode(selected, v)}
                 >
-                  <SelectTrigger id="exemption-code-select"><SelectValue placeholder="Choose a code…" /></SelectTrigger>
+                  <SelectTrigger id="exemption-code-select">
+                    {/* Passing children explicitly (rather than relying on SelectValue to
+                        find and echo the matching SelectItem's label itself) - Radix only
+                        registers item labels once SelectContent has mounted, so on first
+                        render (before the dropdown is ever opened) it fell back to
+                        rendering the raw exemption_code_id string instead of "code — label". */}
+                    <SelectValue placeholder="Choose a code…">{selectedCodeLabel}</SelectValue>
+                  </SelectTrigger>
                   <SelectContent>
                     {codesQuery.data?.map((code) => (
                       <SelectItem key={code.id} value={code.id}>
@@ -456,6 +555,47 @@ export default function ReviewPage() {
               Select a highlighted region to review it. {pageCandidates.length} candidate(s) on this page.
             </p>
           )}
+
+          <Separator className="my-4" />
+
+          {/* AI suggestions come from detection rules matching known entity types/patterns
+              - this covers anything a reviewer spots that the AI missed (a name, a
+              specific phrase) by searching the document's real extracted text for exact
+              occurrences and creating already-approved candidates from each match, with
+              the same exemption-code tagging every other candidate requires. */}
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-neutral-500">Redact text the AI missed</p>
+            <Input
+              placeholder="Exact text to find and redact…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <Select value={searchScope} onValueChange={(v) => v && setSearchScope(v as "page" | "document")}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="document">Whole document</SelectItem>
+                <SelectItem value="page">This page only</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={searchCodeId} onValueChange={(v) => v && setSearchCodeId(v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a code…">
+                  {searchCodeId ? codesQuery.data?.find((c) => c.id === searchCodeId)?.label : undefined}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {codesQuery.data?.map((code) => (
+                  <SelectItem key={code.id} value={code.id}>
+                    {code.code} — {code.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button size="sm" onClick={handleSearchRedact} disabled={!searchQuery.trim() || !searchCodeId || searching}>
+              {searching ? "Searching…" : "Find & redact all matches"}
+            </Button>
+            {searchStatus && <p role="status" aria-live="polite" className="text-xs text-neutral-500">{searchStatus}</p>}
+          </div>
         </aside>
       </div>
 
@@ -492,7 +632,7 @@ export default function ReviewPage() {
               <li key={artifact.id}>
                 <button
                   className="text-blue-600 hover:underline"
-                  onClick={() => downloadArtifact(artifact.id, `${doc.filename}-${artifact.type}`)}
+                  onClick={() => downloadArtifact(artifact.id, exportFilename(doc.filename, artifact.type))}
                 >
                   {artifact.type}
                 </button>{" "}
