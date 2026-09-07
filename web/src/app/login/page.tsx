@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,23 +11,49 @@ import { api, problemMessage } from "@/lib/api-client";
 import { setToken } from "@/lib/auth";
 
 /**
- * Stands in for Cognito's hosted-UI login/signup flow until a user pool exists
- * (specs/02-architecture.md ADR-7) — hits POST /v1/auth/dev-login, which the API only
- * enables when ENV=local. Real signup (POST /v1/auth/signup) 501s until then.
+ * Real sign-in: POST /v1/auth/login (Cognito USER_PASSWORD_AUTH - see
+ * app/auth/cognito.py's password_login() docstring for why this, not Hosted-UI/OAuth).
+ * Pilot onboarding is admin-create-user + admin-set-user-password --permanent (no
+ * self-serve signup yet - see ga_readiness_punchlist memory, deferred until >25 users).
+ *
+ * The dev-login stand-in (POST /v1/auth/dev-login, 404s outside env=="local") is kept
+ * as a local-only fallback below the real form - gated on NODE_ENV, Next's own
+ * build-time signal for "this is a local `next dev` run", not a deployment target.
  */
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const [showDevLogin, setShowDevLogin] = useState(false);
+  const [devName, setDevName] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    const { data, error: apiError } = await api.POST("/v1/auth/login", {
+      body: { email, password },
+    });
+    setLoading(false);
+    if (apiError) {
+      setError(problemMessage(apiError));
+      return;
+    }
+    if (data) {
+      setToken(data.access_token);
+      router.push("/");
+    }
+  }
+
+  async function handleDevLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
     const { data, error: apiError } = await api.POST("/v1/auth/dev-login", {
-      body: { email, name: name || "Dev User" },
+      body: { email, name: devName || "Dev User" },
     });
     setLoading(false);
     if (apiError) {
@@ -44,12 +71,10 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>RedactProof</CardTitle>
-          <CardDescription>
-            Dev login — stands in for Cognito hosted UI until a user pool is set up.
-          </CardDescription>
+          <CardDescription>Sign in to your organization.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form onSubmit={showDevLogin ? handleDevLogin : handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -61,15 +86,42 @@ export default function LoginPage() {
                 placeholder="you@agency.gov"
               />
             </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Analyst" />
-            </div>
+            {showDevLogin ? (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="dev-name">Name</Label>
+                <Input id="dev-name" value={devName} onChange={(e) => setDevName(e.target.value)} placeholder="Jane Analyst" />
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            )}
             {error && <p className="text-sm text-red-600">{error}</p>}
             <Button type="submit" disabled={loading}>
-              {loading ? "Signing in…" : "Continue"}
+              {loading ? "Signing in…" : "Sign in"}
             </Button>
+            {!showDevLogin && (
+              <Link href="/login/forgot-password" className="text-sm text-neutral-500 underline">
+                Forgot password?
+              </Link>
+            )}
           </form>
+          {process.env.NODE_ENV === "development" && (
+            <button
+              type="button"
+              onClick={() => setShowDevLogin((v) => !v)}
+              className="mt-4 text-xs text-neutral-500 underline"
+            >
+              {showDevLogin ? "Use real sign-in" : "Use dev login (local only)"}
+            </button>
+          )}
         </CardContent>
       </Card>
     </main>

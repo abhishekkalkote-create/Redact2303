@@ -61,6 +61,7 @@ resource "aws_cognito_user_pool_client" "web" {
 
   explicit_auth_flows = [
     "ALLOW_USER_SRP_AUTH",
+    "ALLOW_USER_PASSWORD_AUTH", # app/auth/cognito.py's password_login() - see its docstring
     "ALLOW_REFRESH_TOKEN_AUTH",
   ]
 
