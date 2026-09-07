@@ -27,6 +27,20 @@ resource "aws_wafv2_web_acl" "this" {
       managed_rule_group_statement {
         name        = "AWSManagedRulesCommonRuleSet"
         vendor_name = "AWS"
+
+        # This app's whole job is accepting large PDF/ZIP uploads (specs/01-product-spec.md
+        # US-1: 500MB single-file / 2GB ZIP-batch caps) - CommonRuleSet's SizeRestrictions_BODY
+        # rule blocks any request body over its (non-configurable, ~8KB) inspection threshold,
+        # which is every real document upload. Confirmed via `aws wafv2 get-sampled-requests`
+        # that this was silently blocking uploads at the edge (nothing reached the API, no
+        # error the app could even surface) before this override. Counting instead of
+        # blocking keeps the rest of CommonRuleSet's protections active for this rule group.
+        rule_action_override {
+          name = "SizeRestrictions_BODY"
+          action_to_use {
+            count {}
+          }
+        }
       }
     }
     visibility_config {

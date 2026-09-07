@@ -62,13 +62,16 @@ module "cognito" {
 # is assembled out-of-band from module.aurora's endpoint + master_user_secret and written
 # in via `aws secretsmanager put-secret-value` after both modules exist.
 module "ecs" {
-  source                = "../../modules/ecs"
-  name                  = local.name
-  region                = var.region
-  vpc_id                = module.vpc.vpc_id
-  public_subnet_ids     = module.vpc.public_subnet_ids
-  private_subnet_ids    = module.vpc.private_subnet_ids
-  task_role_policy_arns = [module.storage.per_org_kms_management_policy_arn]
+  source             = "../../modules/ecs"
+  name               = local.name
+  region             = var.region
+  vpc_id             = module.vpc.vpc_id
+  public_subnet_ids  = module.vpc.public_subnet_ids
+  private_subnet_ids = module.vpc.private_subnet_ids
+  task_role_policy_arns = [
+    module.storage.per_org_kms_management_policy_arn,
+    module.storage.content_bucket_access_policy_arn,
+  ]
   execution_secrets_arns = [
     aws_secretsmanager_secret.api_certificate_signing_key.arn,
     aws_secretsmanager_secret.api_internal_cron_secret.arn,

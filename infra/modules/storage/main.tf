@@ -116,6 +116,53 @@ resource "aws_iam_policy" "per_org_kms_management" {
           StringLike = { "kms:RequestAlias" = "alias/org-*" }
         }
       },
+      {
+        # The bucket's own default SSE-KMS encryption (above) uses THIS module's platform
+        # key directly, not an `alias/org-*` key - the UseKeysForContent statement's alias
+        # condition never matches it, so every S3 PutObject/GetObject against the content
+        # bucket was failing with AccessDenied on kms:GenerateDataKey until this statement
+        # existed (found via a real upload attempt against the deployed app, not caught by
+        # `terraform plan`/`validate` - an IAM permission gap only surfaces at actual API
+        # call time). Scoped to this one key specifically, not "*", since (unlike the
+        # per-org keys above) its ARN is known at plan time.
+        Sid    = "UsePlatformKeyForContent"
+        Effect = "Allow"
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:GenerateDataKey*",
+          "kms:ReEncrypt*",
+        ]
+        Resource = aws_kms_key.platform.arn
+      },
+    ]
+  })
+}
+
+# Lets the API/workers actually read/write/delete document content in the bucket -
+# nothing previously granted this at all (S3_CONTENT_BUCKET was passed to the app as
+# plain config, with no corresponding IAM grant), so every real upload failed with
+# AccessDenied on s3:PutObject. Found via a real upload attempt against the deployed
+# app, same as the platform-KMS-key gap above - neither surfaces from `terraform plan`/
+# `validate`, only from an actual S3 API call. Scoped to exactly the four operations
+# app/storage/s3.py uses (put/get/head/delete_object - no ListBucket, since nothing
+# calls list_objects).
+resource "aws_iam_policy" "content_bucket_access" {
+  name        = "${var.name}-content-bucket-access"
+  description = "Read/write/delete document content in ${var.name}-content for ${var.name}"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "ReadWriteDeleteContentObjects"
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:DeleteObject",
+        ]
+        Resource = "${aws_s3_bucket.content.arn}/*"
+      },
     ]
   })
 }

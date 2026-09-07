@@ -13,3 +13,7 @@ output "platform_kms_key_arn" {
 output "per_org_kms_management_policy_arn" {
   value = aws_iam_policy.per_org_kms_management.arn
 }
+
+output "content_bucket_access_policy_arn" {
+  value = aws_iam_policy.content_bucket_access.arn
+}
