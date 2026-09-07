@@ -3,24 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Dialog } from "@base-ui/react/dialog";
-
-interface Destination {
-  label: string;
-  href: string;
-  keywords?: string;
-}
-
-// No shared top-nav exists in this app (each page is standalone) - this is the first
-// cross-page navigation surface, so the destination list lives here rather than in a
-// nav config nobody else reads yet.
-const DESTINATIONS: Destination[] = [
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Documents", href: "/documents", keywords: "upload review" },
-  { label: "Rules", href: "/rules", keywords: "exemption packs" },
-  { label: "Security", href: "/security" },
-  { label: "Docs", href: "/docs", keywords: "api reference help" },
-  { label: "Pricing", href: "/pricing", keywords: "plan billing" },
-];
+import { NAV_DESTINATIONS as DESTINATIONS } from "@/config/navigation";
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
@@ -107,10 +90,11 @@ export function CommandPalette() {
                 <button
                   onClick={() => go(d.href)}
                   onMouseEnter={() => setActiveIndex(i)}
-                  className={`block w-full rounded-md px-3 py-2 text-left text-sm ${
+                  className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm ${
                     i === activeIndex ? "bg-neutral-200 dark:bg-neutral-800" : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
                   }`}
                 >
+                  <d.icon className="size-4 shrink-0 text-neutral-500" aria-hidden />
                   {d.label}
                 </button>
               </li>

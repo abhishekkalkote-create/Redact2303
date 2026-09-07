@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AppShell } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -423,27 +424,24 @@ export default function RulesPage() {
   }, [router]);
 
   return (
-    <main id="main-content" className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-8">
-      <div className="flex items-center justify-between">
+    <AppShell>
+      <main id="main-content" className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-8">
         <h1 className="text-xl font-semibold">Rules & Policies</h1>
-        <Link href="/documents" className="text-sm text-neutral-500 hover:underline">
-          ← Documents
-        </Link>
-      </div>
 
-      <Tabs value={section} onValueChange={(v) => setSection(v as Section)}>
-        <TabsList>
-          <TabsTrigger value="packs">Rule packs</TabsTrigger>
-          <TabsTrigger value="taxonomy">Exemption taxonomy</TabsTrigger>
-          <TabsTrigger value="manuals">Manuals</TabsTrigger>
-          <TabsTrigger value="improvements">Suggested improvements</TabsTrigger>
-        </TabsList>
+        <Tabs value={section} onValueChange={(v) => setSection(v as Section)}>
+          <TabsList>
+            <TabsTrigger value="packs">Rule packs</TabsTrigger>
+            <TabsTrigger value="taxonomy">Exemption taxonomy</TabsTrigger>
+            <TabsTrigger value="manuals">Manuals</TabsTrigger>
+            <TabsTrigger value="improvements">Suggested improvements</TabsTrigger>
+          </TabsList>
 
-        <TabsPanel value="packs"><RulePacksSection /></TabsPanel>
-        <TabsPanel value="taxonomy"><TaxonomySection /></TabsPanel>
-        <TabsPanel value="manuals"><ManualsSection /></TabsPanel>
-        <TabsPanel value="improvements"><RuleImprovementsSection /></TabsPanel>
-      </Tabs>
-    </main>
+          <TabsPanel value="packs"><RulePacksSection /></TabsPanel>
+          <TabsPanel value="taxonomy"><TaxonomySection /></TabsPanel>
+          <TabsPanel value="manuals"><ManualsSection /></TabsPanel>
+          <TabsPanel value="improvements"><RuleImprovementsSection /></TabsPanel>
+        </Tabs>
+      </main>
+    </AppShell>
   );
 }

@@ -15,10 +15,18 @@ router = APIRouter(tags=["exports"])
 
 @router.get("/exports", response_model=list[ExportOut])
 async def list_exports(
-    db: AsyncSession = Depends(get_org_db), limit: int = Query(default=20, le=100)
+    db: AsyncSession = Depends(get_org_db),
+    limit: int = Query(default=20, le=100),
+    doc_id: str | None = Query(default=None, description="Scope to one document's export history"),
 ) -> list[ExportArtifact]:
-    """specs/07-ui-spec.md screen 2 "Recent exports" tab."""
-    result = await db.execute(select(ExportArtifact).order_by(ExportArtifact.created_at.desc()).limit(limit))
+    """specs/07-ui-spec.md screen 2 "Recent exports" tab; `doc_id` also backs the review
+    workspace's persistent per-document export history (specs/07 screen 4/5 - the reviewer
+    should always be able to see and re-download a document's past exports, not just the
+    result of whichever export they just triggered this session)."""
+    query = select(ExportArtifact).order_by(ExportArtifact.created_at.desc()).limit(limit)
+    if doc_id is not None:
+        query = query.where(ExportArtifact.doc_id == doc_id)
+    result = await db.execute(query)
     return list(result.scalars().all())
 
 _CONTENT_TYPES = {

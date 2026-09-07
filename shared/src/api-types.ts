@@ -812,7 +812,10 @@ export interface paths {
         };
         /**
          * List Exports
-         * @description specs/07-ui-spec.md screen 2 "Recent exports" tab.
+         * @description specs/07-ui-spec.md screen 2 "Recent exports" tab; `doc_id` also backs the review
+         *     workspace's persistent per-document export history (specs/07 screen 4/5 - the reviewer
+         *     should always be able to see and re-download a document's past exports, not just the
+         *     result of whichever export they just triggered this session).
          */
         get: operations["list_exports_v1_exports_get"];
         put?: never;
@@ -4385,6 +4388,8 @@ export interface operations {
         parameters: {
             query?: {
                 limit?: number;
+                /** @description Scope to one document's export history */
+                doc_id?: string | null;
             };
             header?: {
                 authorization?: string | null;

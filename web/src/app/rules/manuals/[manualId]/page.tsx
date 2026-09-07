@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AppShell } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -230,6 +231,7 @@ export default function ManualDraftRulesPage() {
   const decided = (draftsQuery.data ?? []).filter((d) => d.status !== "pending");
 
   return (
+    <AppShell>
     <main id="main-content" className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
         <div>
@@ -264,5 +266,6 @@ export default function ManualDraftRulesPage() {
         </>
       )}
     </main>
+    </AppShell>
   );
 }

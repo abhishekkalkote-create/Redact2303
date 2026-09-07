@@ -6980,7 +6980,7 @@
     },
     "/v1/exports": {
       "get": {
-        "description": "specs/07-ui-spec.md screen 2 \"Recent exports\" tab.",
+        "description": "specs/07-ui-spec.md screen 2 \"Recent exports\" tab; `doc_id` also backs the review\nworkspace's persistent per-document export history (specs/07 screen 4/5 - the reviewer\nshould always be able to see and re-download a document's past exports, not just the\nresult of whichever export they just triggered this session).",
         "operationId": "list_exports_v1_exports_get",
         "parameters": [
           {
@@ -6992,6 +6992,24 @@
               "maximum": 100,
               "title": "Limit",
               "type": "integer"
+            }
+          },
+          {
+            "description": "Scope to one document's export history",
+            "in": "query",
+            "name": "doc_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Scope to one document's export history",
+              "title": "Doc Id"
             }
           },
           {

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AppShell } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -757,6 +758,7 @@ export default function RulePackDetailPage() {
   }
 
   return (
+    <AppShell>
     <main id="main-content" className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
         <div>
@@ -816,5 +818,6 @@ export default function RulePackDetailPage() {
         )}
       </Tabs>
     </main>
+    </AppShell>
   );
 }

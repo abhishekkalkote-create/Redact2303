@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AppShell } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,9 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { StatusPill } from "@/components/ui/status-pill";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
 import { api, problemMessage } from "@/lib/api-client";
-import { clearToken, getToken } from "@/lib/auth";
+import { getToken } from "@/lib/auth";
 
 const ROLES = ["reviewer", "supervisor", "agency_admin", "billing_admin"];
 
@@ -24,15 +26,6 @@ const KPI_LABELS: Record<string, string> = {
   in_review: "In review",
   awaiting_approval: "Awaiting approval",
   completed: "Completed",
-};
-
-const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
-  ready_for_review: "default",
-  in_review: "default",
-  awaiting_approval: "secondary",
-  review_complete: "secondary",
-  exported: "secondary",
-  error: "destructive",
 };
 
 type QueueTab = "mine" | "team" | "exports";
@@ -145,7 +138,7 @@ function QueueDashboard() {
                       </Link>
                       <div className="flex items-center gap-2 text-xs text-neutral-500">
                         {doc.due_date && <span>due {new Date(doc.due_date).toLocaleDateString()}</span>}
-                        <Badge variant={STATUS_VARIANT[doc.status] ?? "outline"}>{doc.status}</Badge>
+                        <StatusPill status={doc.status} />
                       </div>
                     </li>
                   ))}
@@ -309,20 +302,22 @@ export default function DashboardPage() {
     }
   }
 
-  function handleLogout() {
-    clearToken();
-    router.push("/login");
-  }
-
   if (orgQuery.isLoading) {
-    return <main id="main-content" role="status" className="p-8 text-sm text-neutral-500">Loading…</main>;
+    return (
+      <AppShell>
+        <main id="main-content" role="status" className="p-8 text-sm text-neutral-500">
+          Loading…
+        </main>
+      </AppShell>
+    );
   }
   if (!orgQuery.data) return null;
 
   const org = orgQuery.data;
 
   return (
-    <main id="main-content" className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-8">
+    <AppShell>
+      <main id="main-content" className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">{org.name}</h1>
@@ -331,17 +326,9 @@ export default function DashboardPage() {
             <Badge variant="secondary">{org.plan}</Badge>
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href="/documents" className={buttonVariants({ variant: "outline" })}>
-            Documents
-          </Link>
-          <Link href="/rules" className={buttonVariants({ variant: "outline" })}>
-            Rules & Policies
-          </Link>
-          <Button variant="outline" onClick={handleLogout}>
-            Log out
-          </Button>
-        </div>
+        <Link href="/documents" className={buttonVariants({ variant: "default" })}>
+          Upload a document
+        </Link>
       </div>
 
       <Separator />
@@ -450,6 +437,7 @@ export default function DashboardPage() {
           </form>
         </CardContent>
       </Card>
-    </main>
+      </main>
+    </AppShell>
   );
 }
