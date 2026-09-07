@@ -54,6 +54,25 @@ async def test_core_pii_rules_detect_real_pii_in_sample_text(db_session: AsyncSe
 
 
 @pytest.mark.asyncio
+async def test_core_pii_personal_name_rule_matches_with_no_context_words(db_session: AsyncSession) -> None:
+    """CPII-10 (added 2026-09-07) - every other PERSON rule in the seed data is
+    context-gated to a specific sensitive scenario (victim/witness, juvenile, etc.);
+    this is the one that should catch a plain name with none of that nearby, which
+    nothing previously did even though EMAIL_ADDRESS/PHONE_NUMBER always did."""
+    async with db_session.begin():
+        await set_org(db_session, "org_seed_check")
+        rules = await _rules_for_pack(db_session, "rpk_core_pii")
+
+    text = "Jane Doe can be reached at jane.doe@example.com or 206-555-0199."
+    all_matches = [m for rule in rules for m in run_rule(text, rule)]
+    kept = [m for m in all_matches if not m.excluded]
+    matched_by_key = {m.rule_key: m.text for m in kept}
+
+    assert "CPII-10" in matched_by_key
+    assert "Jane Doe" in matched_by_key["CPII-10"]
+
+
+@pytest.mark.asyncio
 async def test_public_safety_informant_code_and_open_case_number(db_session: AsyncSession) -> None:
     async with db_session.begin():
         await set_org(db_session, "org_seed_check")

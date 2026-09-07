@@ -75,6 +75,15 @@ def get_rules() -> list[dict]:
             {"entity_type": "LOCATION", "context_words": ["home address", "resides at", "lives at", "home residence"], "context_window": 30},
             "b(6)",
         ),
+        # Found missing entirely 2026-09-07: every other PERSON-entity rule in this file
+        # (PS-1, PS-3, HR-1, HR-4) is context-gated to a specific sensitive scenario
+        # (victim/witness, juvenile, medical leave, beneficiary) - there was no
+        # unconditional "this is a person's name" rule anywhere, so a document with a
+        # plain name and no such context word nearby (e.g. just "Jane Doe, jane@x.com,
+        # 555-1234") flagged the email and phone but silently never flagged the name at
+        # all, even though Presidio's own SpacyRecognizer detects PERSON entities
+        # unconditionally - nothing in the rule set had a trigger that would match it.
+        _rule("rul_cpii_10", "rsv_core_pii_v1", "CPII-10", "Personal name", "entity", {"entity_type": "PERSON"}, "b(6)"),
     ]
     public_safety = [
         _rule(
