@@ -33,6 +33,7 @@ dev = [
     "pytest-asyncio>=0.24",
     "ruff>=0.7",
     "mypy>=1.13",
+    "moto[kms]>=5.0",
 ]
 
 [tool.setuptools.packages.find]
