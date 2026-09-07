@@ -1,11 +1,18 @@
 from fastapi import APIRouter, Depends
 
-from app.auth.cognito import confirm_forgot_password, forgot_password, password_login
+from app.auth.cognito import (
+    confirm_forgot_password,
+    confirm_sign_up,
+    forgot_password,
+    password_login,
+    sign_up,
+)
 from app.auth.dev_provider import mint_dev_token
 from app.core.config import Settings, get_settings
 from app.core.errors import ApiError
 from app.core.ids import new_id
 from app.schemas.auth import (
+    ConfirmSignupRequest,
     DevLoginRequest,
     ForgotPasswordRequest,
     LoginRequest,
@@ -22,8 +29,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 async def login(payload: LoginRequest, settings: Settings = Depends(get_settings)) -> TokenResponse:
     """Real Cognito sign-in (USER_PASSWORD_AUTH) - see app/auth/cognito.py's
     password_login() docstring for why this is the direct-password flow, not
-    Hosted-UI/OAuth. Pilot onboarding today is admin-create-user + admin-set-user-password
-    --permanent (see ga_readiness_punchlist memory) rather than self-serve signup."""
+    Hosted-UI/OAuth."""
     token = password_login(settings, payload.email, payload.password)
     return TokenResponse(access_token=token)
 
@@ -48,17 +54,20 @@ async def reset_password(
 
 @router.post("/signup", response_model=SignupResponse)
 async def signup(payload: SignupRequest, settings: Settings = Depends(get_settings)) -> SignupResponse:
-    """Prod path calls Cognito `sign_up` (email verification via Cognito hosted flow).
-    Real Cognito wiring lands once a user pool exists — see infra/modules/cognito and
-    specs/02-architecture.md ADR-7. For now this validates the shape of the contract."""
-    if not settings.cognito_configured:
-        raise ApiError(
-            501,
-            "Not Implemented",
-            "Cognito is not configured yet (COGNITO_USER_POOL_ID/APP_CLIENT_ID unset). "
-            "Use POST /auth/dev-login in local dev until the Cognito user pool is created.",
-        )
-    raise ApiError(501, "Not Implemented", "Cognito sign_up wiring pending user pool creation")
+    """Real Cognito `sign_up` - auto_verified_attributes=["email"] (infra/modules/cognito)
+    means the account starts UNCONFIRMED and a verification code is emailed automatically;
+    POST /auth/confirm-signup below completes it. No local `users` row is created here -
+    app/auth/deps.py's _get_or_create_user lazily creates it on first authenticated
+    request after the user logs in, same as every other auth path in this file."""
+    user_id, needs_confirmation = sign_up(settings, payload.email, payload.name, payload.password)
+    return SignupResponse(user_id=user_id, email=payload.email, verification_required=needs_confirmation)
+
+
+@router.post("/confirm-signup", status_code=204)
+async def confirm_signup(
+    payload: ConfirmSignupRequest, settings: Settings = Depends(get_settings)
+) -> None:
+    confirm_sign_up(settings, payload.email, payload.code)
 
 
 @router.post("/dev-login", response_model=TokenResponse)

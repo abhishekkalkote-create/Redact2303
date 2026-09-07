@@ -90,6 +90,76 @@ def password_login(settings: Settings, email: str, password: str) -> str:
     return id_token
 
 
+def sign_up(settings: Settings, email: str, name: str, password: str) -> tuple[str, bool]:
+    """Self-serve registration. auto_verified_attributes=["email"] (infra/modules/cognito)
+    means Cognito auto-sends a verification code on sign_up and the account starts
+    UNCONFIRMED until confirm_sign_up() below completes - no separate "verify your email"
+    step to build beyond that confirmation screen.
+
+    `name` goes into the standard `name` attribute so CognitoClaims.name (cognito.py's
+    verify()) has something real instead of falling back to the email address.
+
+    Returns (user_sub, needs_confirmation) - needs_confirmation is False only in the
+    (here, never-hit-in-practice) case a pool has email auto-confirm configured, so the
+    router can still report the field honestly rather than hardcoding True.
+    """
+    if not settings.cognito_configured:
+        raise ApiError(501, "Not Implemented", "Cognito is not configured yet")
+
+    import boto3
+    from botocore.exceptions import ClientError
+
+    client = boto3.client("cognito-idp", region_name=settings.cognito_region)
+    try:
+        response = client.sign_up(
+            ClientId=settings.cognito_app_client_id,
+            Username=email,
+            Password=password,
+            UserAttributes=[{"Name": "email", "Value": email}, {"Name": "name", "Value": name}],
+        )
+    except ClientError as exc:
+        error_code = exc.response.get("Error", {}).get("Code", "")
+        if error_code == "UsernameExistsException":
+            # prevent_user_existence_errors="ENABLED" (infra/modules/cognito) only covers
+            # initiate_auth/forgot_password - sign_up itself still raises this plainly, so
+            # unlike those two flows this one genuinely does need to decide what to reveal.
+            # Match forgot_password's already-established "don't reveal existence" stance
+            # rather than leaking a distinguishable error here.
+            raise ApiError(
+                400, "Bad Request",
+                "Could not create account with that email - it may already be registered.",
+            ) from exc
+        if error_code == "InvalidPasswordException":
+            raise ApiError(400, "Bad Request", "Password does not meet the account policy") from exc
+        raise
+    return response["UserSub"], not response["UserConfirmed"]
+
+
+def confirm_sign_up(settings: Settings, email: str, code: str) -> None:
+    if not settings.cognito_configured:
+        raise ApiError(501, "Not Implemented", "Cognito is not configured yet")
+
+    import boto3
+    from botocore.exceptions import ClientError
+
+    client = boto3.client("cognito-idp", region_name=settings.cognito_region)
+    try:
+        client.confirm_sign_up(
+            ClientId=settings.cognito_app_client_id,
+            Username=email,
+            ConfirmationCode=code,
+        )
+    except ClientError as exc:
+        error_code = exc.response.get("Error", {}).get("Code", "")
+        if error_code in ("CodeMismatchException", "ExpiredCodeException", "UserNotFoundException"):
+            raise ApiError(400, "Bad Request", "Invalid or expired confirmation code") from exc
+        if error_code == "NotAuthorizedException":
+            # Cognito's own message for "already confirmed" - surfaced as-is since it's
+            # actionable for the user (go sign in instead) rather than a generic 400.
+            raise ApiError(400, "Bad Request", "This account is already confirmed") from exc
+        raise
+
+
 def forgot_password(settings: Settings, email: str) -> None:
     """Cognito's own default email delivery (COGNITO_DEFAULT - infra/modules/cognito's
     user pool sets no `email_configuration`, so this is the AWS default, not something

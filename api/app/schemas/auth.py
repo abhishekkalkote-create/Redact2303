@@ -13,6 +13,11 @@ class SignupResponse(BaseModel):
     verification_required: bool
 
 
+class ConfirmSignupRequest(BaseModel):
+    email: EmailStr
+    code: str = Field(min_length=1)
+
+
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=1)

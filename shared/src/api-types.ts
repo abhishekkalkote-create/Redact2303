@@ -60,6 +60,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/confirm-signup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Signup */
+        post: operations["confirm_signup_v1_auth_confirm_signup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/dev-login": {
         parameters: {
             query?: never;
@@ -112,8 +129,7 @@ export interface paths {
          * Login
          * @description Real Cognito sign-in (USER_PASSWORD_AUTH) - see app/auth/cognito.py's
          *     password_login() docstring for why this is the direct-password flow, not
-         *     Hosted-UI/OAuth. Pilot onboarding today is admin-create-user + admin-set-user-password
-         *     --permanent (see ga_readiness_punchlist memory) rather than self-serve signup.
+         *     Hosted-UI/OAuth.
          */
         post: operations["login_v1_auth_login_post"];
         delete?: never;
@@ -150,9 +166,11 @@ export interface paths {
         put?: never;
         /**
          * Signup
-         * @description Prod path calls Cognito `sign_up` (email verification via Cognito hosted flow).
-         *     Real Cognito wiring lands once a user pool exists — see infra/modules/cognito and
-         *     specs/02-architecture.md ADR-7. For now this validates the shape of the contract.
+         * @description Real Cognito `sign_up` - auto_verified_attributes=["email"] (infra/modules/cognito)
+         *     means the account starts UNCONFIRMED and a verification code is emailed automatically;
+         *     POST /auth/confirm-signup below completes it. No local `users` row is created here -
+         *     app/auth/deps.py's _get_or_create_user lazily creates it on first authenticated
+         *     request after the user logs in, same as every other auth path in this file.
          */
         post: operations["signup_v1_auth_signup_post"];
         delete?: never;
@@ -1628,6 +1646,16 @@ export interface components {
             /** Checkout Url */
             checkout_url: string;
         };
+        /** ConfirmSignupRequest */
+        ConfirmSignupRequest: {
+            /** Code */
+            code: string;
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+        };
         /**
          * DevLoginRequest
          * @description Local-only: mints a dev JWT for an existing (or newly created) user, standing in for
@@ -2901,6 +2929,37 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_signup_v1_auth_confirm_signup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmSignupRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

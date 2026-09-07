@@ -13,8 +13,6 @@ import { setToken } from "@/lib/auth";
 /**
  * Real sign-in: POST /v1/auth/login (Cognito USER_PASSWORD_AUTH - see
  * app/auth/cognito.py's password_login() docstring for why this, not Hosted-UI/OAuth).
- * Pilot onboarding is admin-create-user + admin-set-user-password --permanent (no
- * self-serve signup yet - see ga_readiness_punchlist memory, deferred until >25 users).
  *
  * The dev-login stand-in (POST /v1/auth/dev-login, 404s outside env=="local") is kept
  * as a local-only fallback below the real form - gated on NODE_ENV, Next's own
@@ -108,9 +106,14 @@ export default function LoginPage() {
               {loading ? "Signing in…" : "Sign in"}
             </Button>
             {!showDevLogin && (
-              <Link href="/login/forgot-password" className="text-sm text-neutral-500 underline">
-                Forgot password?
-              </Link>
+              <>
+                <Link href="/login/forgot-password" className="text-sm text-neutral-500 underline">
+                  Forgot password?
+                </Link>
+                <Link href="/signup" className="text-sm text-neutral-500 underline">
+                  Don&apos;t have an account? Sign up
+                </Link>
+              </>
             )}
           </form>
           {process.env.NODE_ENV === "development" && (
