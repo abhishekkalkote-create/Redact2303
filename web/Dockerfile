@@ -10,6 +10,12 @@ RUN npm ci
 
 FROM node:22-slim AS builder
 WORKDIR /app
+# NEXT_PUBLIC_* vars are baked in at build time, not read at container runtime - must be
+# passed as a build arg (`docker build --build-arg NEXT_PUBLIC_API_URL=...`), not an ECS
+# task-definition environment variable (which the ecs module's web_environment feeds -
+# too late for a client bundle already built into this image).
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build --workspace web

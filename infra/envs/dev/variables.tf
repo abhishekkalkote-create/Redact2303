@@ -14,6 +14,21 @@ variable "domain_name" {
   default     = ""
 }
 
+variable "public_hostname" {
+  description = <<-EOT
+    The real public hostname to use for CORS_ORIGINS whenever domain_name is still
+    empty - deliberately a plain string variable, not a `module.edge.*` reference.
+    module.edge already depends on module.ecs (its origin is module.ecs.alb_dns_name),
+    so module.ecs referencing any module.edge output directly would form a real
+    dependency cycle (ecs -> edge -> ecs). Set this to module.edge's own
+    cloudfront_domain_name output by hand (it's stable once the distribution exists,
+    e.g. via `terraform output cloudfront_domain_name`) after the first apply, then
+    keep it in sync only if the distribution is ever replaced.
+  EOT
+  type        = string
+  default     = ""
+}
+
 variable "cognito_domain_prefix" {
   type    = string
   default = "redactproof-dev"

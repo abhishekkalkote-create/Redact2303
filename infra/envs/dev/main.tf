@@ -85,7 +85,9 @@ module "ecs" {
     COGNITO_APP_CLIENT_ID = module.cognito.app_client_id
     COGNITO_REGION        = var.region
     S3_CONTENT_BUCKET     = module.storage.bucket_name
-    CORS_ORIGINS          = var.domain_name == "" ? "[\"http://localhost:3000\"]" : "[\"https://${var.domain_name}\"]"
+    CORS_ORIGINS = var.domain_name != "" ? "[\"https://${var.domain_name}\"]" : (
+      var.public_hostname != "" ? "[\"https://${var.public_hostname}\"]" : "[\"http://localhost:3000\"]"
+    )
   }
   api_secrets = {
     CERTIFICATE_SIGNING_KEY = aws_secretsmanager_secret.api_certificate_signing_key.arn
