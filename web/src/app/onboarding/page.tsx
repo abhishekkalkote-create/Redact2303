@@ -19,13 +19,14 @@ const ORG_TYPES = [
   { value: "other", label: "Other" },
 ];
 
-const STATES = ["FED", "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "WA", "TX", "NY"];
+// PA listed first (and set as the default below) - the primary pilot jurisdiction.
+const STATES = ["PA", "FED", "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "WA", "TX", "NY"];
 
 /** specs/07-ui-spec.md § 1 — "Create your organization" onboarding step. */
 export default function OnboardingPage() {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [jurisdictionState, setJurisdictionState] = useState("WA");
+  const [jurisdictionState, setJurisdictionState] = useState("PA");
   const [orgType, setOrgType] = useState("city_clerk");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
