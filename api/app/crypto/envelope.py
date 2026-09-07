@@ -13,11 +13,23 @@ app/auth/{cognito,dev_provider}.py.
 import base64
 import json
 import os
+import time
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 from app.core.config import Settings, get_settings
+
+# Confirmed for real against the deployed app (2026-09-07): a brand-new org's very first
+# document upload failed with "GenerateDataKey ... Alias ... is not found" immediately
+# after _ensure_key()'s own create_alias call for that exact alias succeeded moments
+# earlier in the same request - real KMS alias-to-key resolution can lag slightly behind
+# alias creation for a newly-created alias, even within the same account/region. A short
+# retry absorbs that window; it is not masking a real permissions or logic bug (both
+# already independently confirmed correct - create_key/create_alias/enable_key_rotation
+# all succeeded, only the immediately-following generate_data_key call raced ahead of it).
+_ALIAS_PROPAGATION_RETRIES = 5
+_ALIAS_PROPAGATION_DELAY_SECONDS = 0.5
 
 
 class EnvelopeCipher:
@@ -81,10 +93,20 @@ class KmsEnvelopeCipher(EnvelopeCipher):
             pass  # another concurrent request already created it for this org
         self._client.enable_key_rotation(KeyId=key_id)
 
+    def _generate_data_key_with_retry(self, alias: str) -> dict:
+        for attempt in range(_ALIAS_PROPAGATION_RETRIES):
+            try:
+                return self._client.generate_data_key(KeyId=alias, KeySpec="AES_256")
+            except self._client.exceptions.NotFoundException:
+                if attempt == _ALIAS_PROPAGATION_RETRIES - 1:
+                    raise
+                time.sleep(_ALIAS_PROPAGATION_DELAY_SECONDS)
+        raise AssertionError("unreachable")
+
     def encrypt(self, org_id: str, plaintext: str) -> str:
         self._ensure_key(org_id)
         alias = self._alias(org_id)
-        data_key = self._client.generate_data_key(KeyId=alias, KeySpec="AES_256")
+        data_key = self._generate_data_key_with_retry(alias)
         nonce = os.urandom(12)
         aesgcm = AESGCM(data_key["Plaintext"])
         ciphertext = aesgcm.encrypt(nonce, plaintext.encode(), None)

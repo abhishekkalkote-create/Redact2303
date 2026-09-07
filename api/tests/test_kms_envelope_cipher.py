@@ -50,6 +50,37 @@ def test_reuses_the_same_key_across_multiple_calls(kms_cipher: KmsEnvelopeCipher
     assert len(matching) == 1
 
 
+def test_encrypt_retries_past_a_transient_alias_not_found(
+    kms_cipher: KmsEnvelopeCipher, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Confirmed for real against the deployed app (2026-09-07): a brand-new org's very
+    first upload failed with GenerateDataKey NotFoundException on the alias moments
+    after _ensure_key()'s own create_alias call for that exact alias had already
+    succeeded - real KMS alias-to-key resolution can lag slightly behind alias creation.
+    Simulates that exact race: the first generate_data_key call raises NotFoundException
+    (as if the alias hasn't propagated yet), the second call (against moto's real,
+    already-created alias) succeeds."""
+    monkeypatch.setattr("time.sleep", lambda seconds: None)
+
+    real_generate_data_key = kms_cipher._client.generate_data_key
+    calls = {"count": 0}
+
+    def flaky_generate_data_key(**kwargs):
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise kms_cipher._client.exceptions.NotFoundException(
+                {"Error": {"Code": "NotFoundException", "Message": "Alias not found"}}, "GenerateDataKey"
+            )
+        return real_generate_data_key(**kwargs)
+
+    monkeypatch.setattr(kms_cipher._client, "generate_data_key", flaky_generate_data_key)
+
+    ciphertext = kms_cipher.encrypt("org_race", "sensitive text")
+
+    assert calls["count"] == 2
+    assert kms_cipher.decrypt("org_race", ciphertext) == "sensitive text"
+
+
 def test_different_orgs_get_different_keys(kms_cipher: KmsEnvelopeCipher) -> None:
     from botocore.exceptions import ClientError
 
