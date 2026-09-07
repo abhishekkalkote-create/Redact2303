@@ -14,6 +14,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 from app.core.config import Settings, get_settings
+from app.core.errors import ApiError
+from app.core.ids import new_id
 
 
 @dataclass
@@ -79,12 +81,48 @@ class BillingProvider(ABC):
         ...
 
 
+class DisabledBillingProvider(BillingProvider):
+    """Stripe isn't configured (stripe_enabled=false) - used in ANY environment where
+    that's true, not just local (get_billing_provider() below used to unconditionally
+    raise for env != "local" regardless of stripe_enabled, which crashed org creation
+    entirely - every org creation calls create_customer(); specs/09-admin-billing.md
+    already expects some orgs to pay by PO/ACH outside Stripe entirely, so billing not
+    being wired yet must not block creating an org at all).
+
+    Unlike MockBillingProvider (local-dev-and-tests-only: its parse_webhook_event trusts
+    an UNSIGNED payload verbatim, which is only safe when nothing external can reach it),
+    this provider's outbound methods no-op safely, but parse_webhook_event refuses
+    instead of trusting unverified input - accepting a forged "invoice.paid" body from
+    anyone would let them grant themselves billing state without paying anything, real
+    or mock.
+    """
+
+    async def create_customer(self, org_id: str, org_name: str, email: str) -> str:
+        return new_id("cus")  # placeholder id; no real billing yet, org creation still succeeds
+
+    async def create_checkout_session(
+        self, org_id: str, customer_id: str, plan: str, success_url: str, cancel_url: str
+    ) -> CheckoutSession:
+        raise ApiError(501, "Not Implemented", "Billing is not configured yet")
+
+    async def create_portal_session(self, customer_id: str, return_url: str) -> str:
+        raise ApiError(501, "Not Implemented", "Billing is not configured yet")
+
+    def parse_webhook_event(self, payload: bytes, signature_header: str | None) -> BillingEvent:
+        raise ApiError(501, "Not Implemented", "Billing webhooks are not configured yet")
+
+    async def report_usage(self, customer_id: str, metric: str, quantity: int, period: str) -> None:
+        return None  # nothing to report to; usage_records remains the source of truth either way
+
+
 def get_billing_provider(settings: Settings | None = None) -> BillingProvider:
     settings = settings or get_settings()
-    if settings.env == "local" and not settings.stripe_enabled:
-        from app.billing.mock_provider import MockBillingProvider
+    if not settings.stripe_enabled:
+        if settings.env == "local":
+            from app.billing.mock_provider import MockBillingProvider
 
-        return MockBillingProvider()
+            return MockBillingProvider()
+        return DisabledBillingProvider()
     raise NotImplementedError(
         "stripe_enabled is set but no real StripeProvider exists yet — wire the Stripe "
         "SDK behind BillingProvider before flipping this flag."
