@@ -1,6 +1,8 @@
 """Creates redaction_candidates from contextual LLM findings — the LLM-origin counterpart
 to app/pipeline/detect.py's deterministic pass. specs/05-redaction-pipeline.md Stage 4."""
 
+import logging
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,6 +20,8 @@ from app.pipeline.public_safety import (
     RULE_KEY,
     RULE_VERSION,
 )
+
+logger = logging.getLogger(__name__)
 
 
 async def _taxonomy_summary_and_code_map(session: AsyncSession, org_id: str) -> tuple[str, dict[str, str]]:
@@ -40,10 +44,25 @@ async def detect_page_contextual(
     if not code_map:
         return [], 0, 0, 0  # org has none of the Public Safety pack's codes cloned — nothing to ground findings against
 
-    findings, hallucinated, in_tokens, out_tokens = run_contextual_pass(
-        provider, page.full_text, document_type=DOCUMENT_TYPE,
-        llm_context_rules=LLM_CONTEXT_RULES, exemption_taxonomy_summary=taxonomy_summary,
-    )
+    try:
+        findings, hallucinated, in_tokens, out_tokens = run_contextual_pass(
+            provider, page.full_text, document_type=DOCUMENT_TYPE,
+            llm_context_rules=LLM_CONTEXT_RULES, exemption_taxonomy_summary=taxonomy_summary,
+        )
+    except Exception:  # noqa: BLE001 — deliberately broad: any LLM-layer failure
+        # A real Bedrock failure (access not yet granted, throttling, a regional outage)
+        # must not take down the whole document - deterministic detection (SSN, credit
+        # cards, entity recognition, ...) already ran and is real, useful output on its
+        # own. DisabledLLMProvider (app/llm/provider.py) only covers "not configured at
+        # all"; this covers every other way the call can fail once it IS configured.
+        # Never log the exception's own text - a provider error can legitimately embed
+        # request content (invalid_request_error messages echo the payload).
+        logger.warning(
+            "llm_contextual_pass.failed",
+            extra={"event": "llm_contextual_pass.failed", "doc_id": doc_id, "page_no": page.page_no},
+            exc_info=False,
+        )
+        return [], 0, 0, 0
 
     cipher = get_cipher()
     candidates = []

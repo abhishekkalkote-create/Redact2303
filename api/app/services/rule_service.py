@@ -287,7 +287,15 @@ async def nl_edit_version(
     allowed_codes = await _allowed_exemption_codes(session, org_id)
 
     provider = get_provider()
-    proposals, input_tokens, output_tokens = run_nl_edit(provider, instruction, rules, allowed_codes)
+    try:
+        proposals, input_tokens, output_tokens = run_nl_edit(provider, instruction, rules, allowed_codes)
+    except Exception as exc:
+        # A real provider failure (Bedrock access not yet granted, throttling, an outage)
+        # must surface as a clear "try again" error,
+        # not an unhandled 500 with no explanation, and MUST NOT be read as "the AI found
+        # zero changes to suggest" - that would be silently misleading, not a safe
+        # degradation, for a request the user is actively waiting on.
+        raise ApiError(503, "Service Unavailable", "AI assistance is temporarily unavailable — try again shortly.") from exc
 
     await write_audit_event(
         session, org_id=org_id, actor_type="user", actor_id=user_id,

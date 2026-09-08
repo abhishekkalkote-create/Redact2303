@@ -7,7 +7,8 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.llm.provider import FakeLLMProvider
+from app.core.errors import ApiError
+from app.llm.provider import FakeLLMProvider, LLMProvider, LLMResponse
 from app.schemas.rule import RulePackCreate
 from app.services.exemption_service import clone_library_for_org
 from app.services.rule_service import create_rule_pack, list_versions_for_pack, nl_edit_version
@@ -112,3 +113,38 @@ async def test_nl_edit_version_rejects_code_not_in_org_taxonomy(db_session: Asyn
         proposals, _prompt_version = await nl_edit_version(db_session, org_id, user_id, version_id, "test instruction")
 
     assert not proposals[0].is_valid
+
+
+class _AlwaysFailsProvider(LLMProvider):
+    model_id = "always-fails"
+
+    def complete(self, system: str, user: str, max_tokens: int = 2048) -> LLMResponse:
+        raise RuntimeError("simulated Bedrock AccessDeniedException")
+
+
+@pytest.mark.asyncio
+async def test_nl_edit_version_surfaces_clean_error_on_provider_failure(db_session: AsyncSession, monkeypatch) -> None:
+    """A real provider failure (Bedrock access not yet granted, throttling, an outage)
+    must become a clear 503 the user can act on ("try again"), never an unhandled 500 -
+    and must never look like "the AI found zero changes to suggest" (that would silently
+    mislead a user actively waiting on this request)."""
+    org_id, user_id = "org_nl_3", "usr_nl_3"
+    async with db_session.begin():
+        await _seed_org_and_user(db_session, org_id, user_id)
+        await clone_library_for_org(db_session, org_id, "WA")
+
+    async with db_session.begin():
+        await set_org(db_session, org_id)
+        pack = await create_rule_pack(db_session, org_id, user_id, RulePackCreate(name="Custom", category="custom"))
+        versions = await list_versions_for_pack(db_session, pack.id)
+        version_id = versions[0].id
+
+    monkeypatch.setattr("app.services.rule_service.get_provider", lambda: _AlwaysFailsProvider())
+
+    with pytest.raises(ApiError) as exc_info:
+        async with db_session.begin():
+            await set_org(db_session, org_id)
+            await nl_edit_version(db_session, org_id, user_id, version_id, "test instruction")
+
+    assert exc_info.value.status_code == 503
+    assert "simulated Bedrock" not in (exc_info.value.detail or "")

@@ -7,6 +7,8 @@
 # CloudFront (modules/edge) terminates TLS for end users; give the ALB a real ACM cert
 # + HTTPS listener once a domain exists and the cert is issued/validated in ACM.
 
+data "aws_caller_identity" "current" {}
+
 resource "aws_ecs_cluster" "this" {
   name = var.name
   setting {
@@ -258,6 +260,31 @@ resource "aws_iam_role_policy" "task_textract" {
       Effect   = "Allow"
       Action   = "textract:DetectDocumentText"
       Resource = "*"
+    }]
+  })
+}
+
+# app/llm/provider.py's BedrockProvider - Claude Haiku 4.5 via a US-only cross-region
+# inference profile (see api_environment's BEDROCK_MODEL_ID). Invoking through an
+# inference profile needs bedrock:InvokeModel on BOTH the profile ARN and the underlying
+# foundation-model ARNs it can route to (AWS's own requirement for cross-region
+# profiles) - scoped to exactly the 3 regions "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+# actually spans (us-east-1/us-east-2/us-west-2), not "*", and to this one model, not
+# every Anthropic model AWS offers.
+resource "aws_iam_role_policy" "task_bedrock" {
+  name = "${var.name}-task-bedrock"
+  role = aws_iam_role.task.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
+      Resource = [
+        "arn:aws:bedrock:${var.region}:${data.aws_caller_identity.current.account_id}:inference-profile/us.anthropic.claude-haiku-4-5-20251001-v1:0",
+        "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
+        "arn:aws:bedrock:us-east-2::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
+        "arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
+      ]
     }]
   })
 }

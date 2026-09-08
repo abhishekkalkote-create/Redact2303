@@ -91,6 +91,15 @@ module "ecs" {
     CORS_ORIGINS = var.domain_name != "" ? "[\"https://${var.domain_name}\"]" : (
       var.public_hostname != "" ? "[\"https://${var.public_hostname}\"]" : "[\"http://localhost:3000\"]"
     )
+    # app/llm/provider.py's contextual-detection pass - Claude Haiku 4.5 via a US-only
+    # cross-region inference profile (app/pipeline/public_safety.py's LLM_CONTEXT_RULES;
+    # specs/08-security-compliance.md's in-boundary-US requirement is why this is the
+    # "us." profile, not "global."). Still returns zero findings until Bedrock model
+    # access is granted for this account in the console (Model access page) - that grant
+    # is a one-time account-level attestation only the account owner can submit, not
+    # something Terraform can do.
+    BEDROCK_ENABLED  = "true"
+    BEDROCK_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
   }
   api_secrets = {
     CERTIFICATE_SIGNING_KEY = aws_secretsmanager_secret.api_certificate_signing_key.arn
