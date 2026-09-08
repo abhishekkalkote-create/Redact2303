@@ -279,8 +279,17 @@ export default function DashboardPage() {
   const [inviting, setInviting] = useState(false);
 
   useEffect(() => {
-    if (orgQuery.isError) router.replace("/onboarding");
-  }, [orgQuery.isError, router]);
+    if (!orgQuery.isError) return;
+    // A real bug found from an actual expired-session report: GET /orgs/current fails
+    // with 401 for an expired token just as much as it fails with 403 for a user who
+    // genuinely has no org yet - treating every error here as "no org, go create one"
+    // sent already-onboarded users with a stale token back to onboarding instead of back
+    // to login. api-client.ts's global 401 handler now redirects to /login before this
+    // even runs in the normal case; this only still needs to separate the two for
+    // whatever residual case gets here first.
+    const status = (orgQuery.error as { status?: number } | null)?.status;
+    router.replace(status === 401 ? "/login" : "/onboarding");
+  }, [orgQuery.isError, orgQuery.error, router]);
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
